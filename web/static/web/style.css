@@ -1,0 +1,12 @@
+.top_bar{ background: #000000; height: 30px; text-align: right; padding-top:12px;}
+
+.top_bar a{ text-transform: uppercase; color: #98CBCE; text-decoration: none; font-weight: bold; margin-right:20px;}
+
+.main_header {background: #CCCCCC; padding: 10px 10px 10px 40px;}
+
+.search_bar {background: #E6E6E6; padding: 10px 10px 10px 180px; }
+
+.left_nav {background: #E6E6E6; min-width:160px; float:left; height: 100%}
+
+.results {background: #FFFFFF; padding: 15px; float: left;}
+

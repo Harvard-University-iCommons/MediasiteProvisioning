@@ -1,0 +1,71 @@
+{% load staticfiles %}
+
+<link rel="stylesheet" type="text/css" href="{% static "web/style.css" %}" />
+
+<div>
+    <!-- Header -->
+    <div class="top_bar">
+        <!-- Top bar -->
+        <a href="http://www.harvard.edu">Harvard.edu</a>
+    </div>
+    <div class="main_header">
+        <!-- Main Header -->
+        <div>
+            <div class="logo"></div>
+            <div></div>
+        </div>
+        <div>
+            <h1>Welcome to DVSP</h1>
+            <p>Provision Mediasite for your classroom</p>
+        </div>
+    </div>
+    <div class="search_bar">
+        <!-- Search bar -->
+        <form action="{% url 'web:index' %}" method="post" >{%  csrf_token %}
+            <div>{{ form.accounts }}</div>
+            <div>{{ form.search }}</div>
+            <input type="submit" value="Search">
+        </form>
+
+    </div>
+</div>
+<div>
+    <!-- Main -->
+    <div class="left_nav">
+        <!-- Left nav/facets -->
+        {% if terms %}
+            {%  for term in terms %}
+                <div>
+                    {{ term.name }}
+                </div>
+            {% endfor %}
+        {%  endif %}
+
+        {% if years %}
+            {% for year in years %}
+                <div>
+                    {{ year }}
+                </div>
+            {% endfor %}
+        {% endif %}
+    </div>
+
+        <div class="results">
+        <!-- Results -->
+        {% if search_results %}
+                {% for course in search_results %}
+                    <div>
+                        {{ course.name }}
+                        {{ course.course_code }}
+                        {{ course.start_at }} - {{ course.end_at }}
+                    </div>
+                {% endfor %}
+        {% else %}
+            Please select a school and enter a course name or number in the search box to find courses to provision to Mediasite
+        {% endif %}
+
+    </div>
+
+
+</div>
+
