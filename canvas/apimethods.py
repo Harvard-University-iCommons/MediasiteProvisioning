@@ -9,7 +9,7 @@ class CanvasAPI:
         serializer = AccountSerializer(data=json, many=True)
         validated = serializer.is_valid()
         if validated:
-            return serializer.data
+            return serializer.validated_data
         else:
             errors = serializer.errors
 
@@ -19,7 +19,7 @@ class CanvasAPI:
         serializer = CourseSerializer(data=json, many=True)
         validated = serializer.is_valid()
         if validated:
-            return serializer.data
+            return serializer.validated_data
         else:
             errors = serializer.errors
 

@@ -21,8 +21,3 @@ class CourseSerializer(serializers.ModelSerializer):
     class Meta:
         model = Course
 
-    def create(self, validated_data):
-        course = Course(
-            name = validated_data['name']
-        )
-        return course

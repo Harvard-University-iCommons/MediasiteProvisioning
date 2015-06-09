@@ -19,7 +19,7 @@ def search(request):
                 term = search_result['term']
                 if term not in terms:
                     terms.append(term)
-                year = datetime.strptime(search_result['start_at'], '%Y-%m-%dT%H:%M:%SZ').year
+                year = search_result['start_at'].year
                 if year not in years:
                     years.append(year)
 
