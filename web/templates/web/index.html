@@ -33,16 +33,16 @@
     <!-- Main -->
     <div class="left_nav">
         <!-- Left nav/facets -->
-        {% if terms %}
-            {%  for term in terms %}
+        {% if results.terms %}
+            {%  for term in results.terms %}
                 <div>
                     {{ term.name }}
                 </div>
             {% endfor %}
         {%  endif %}
 
-        {% if years %}
-            {% for year in years %}
+        {% if results.years %}
+            {% for year in results.years %}
                 <div>
                     {{ year }}
                 </div>
@@ -52,14 +52,32 @@
 
         <div class="results">
         <!-- Results -->
-        {% if search_results %}
-                {% for course in search_results %}
+        {% if results %}
+            {% if results.count == 0 %}
+                There are no courses that match your search terms
+            {% else %}
+                {% for course in results.search_results %}
                     <div>
-                        {{ course.name }}
-                        {{ course.course_code }}
-                        {{ course.start_at }} - {{ course.end_at }}
+                        <div>
+                            {{ course.name }} ( {{ course.course_code }} )
+                        </div>
+                        <div>
+                            {{ course.start_at }} - {{ course.end_at }}
+                        </div>
+                        <div>
+                            {% if course.teaching_users %}
+                                {% for user in course.teaching_users  %}
+                                    <div>
+                                        {{ user.name }}
+                                    </div>
+                                {% endfor %}
+                            {% endif %}
+
+                        </div>
                     </div>
+                    <br />
                 {% endfor %}
+            {% endif %}
         {% else %}
             Please select a school and enter a course name or number in the search box to find courses to provision to Mediasite
         {% endif %}

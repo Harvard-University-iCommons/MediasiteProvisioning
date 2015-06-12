@@ -1,6 +1,7 @@
 import requests
-from .serializer import AccountSerializer, CourseSerializer
-from .apimodels import Account, Course
+from .serializer import AccountSerializer, CourseSerializer, EnrollmentSerializer, UserSerializer
+from .apimodels import Course
+
 
 class CanvasAPI:
     @staticmethod
@@ -9,14 +10,69 @@ class CanvasAPI:
         serializer = AccountSerializer(data=json, many=True)
         validated = serializer.is_valid()
         if validated:
+            serializer.save()
             return serializer.validated_data
         else:
             errors = serializer.errors
 
     @staticmethod
     def search_courses(account_id, search_term):
-        json = CanvasAPI.get_canvas_request(partial_url='accounts/{0}/courses?search_term={1}&include=term'.format(account_id, search_term))
+        json = CanvasAPI.get_canvas_request(
+            partial_url='accounts/{0}/courses?search_term={1}&include=term'.format(account_id, search_term))
         serializer = CourseSerializer(data=json, many=True)
+        validated = serializer.is_valid()
+        if validated:
+            return serializer.validated_data
+        else:
+            errors = serializer.errors
+
+    @staticmethod
+    def get_course(course_id):
+        json = CanvasAPI.get_canvas_request(
+            partial_url='courses/{0}'.format(course_id)
+        )
+        serializer = CourseSerializer(data=json)
+        validated = serializer.is_valid()
+        if validated:
+            return serializer.validated_data
+        else:
+            errors = serializer.errors
+
+    @staticmethod
+    def get_enrollments_for_teachers_and_tas(course_id):
+        json = CanvasAPI.get_canvas_request(partial_url='courses/{0}/enrollments?type[]={1}&type[]={2}'
+                                            .format(course_id, 'TeacherEnrollment', 'TaEnrollment'))
+        serializer = EnrollmentSerializer(data=json, many=True)
+        validated = serializer.is_valid()
+        if validated:
+            return serializer.validated_data
+        else:
+            errors = serializer.errors
+
+    @staticmethod
+    def get_user_profile(user_id):
+        json = CanvasAPI.get_canvas_request(partial_url='users/{0}/profile'.format(user_id))
+        serializer = UserSerializer(data=json)
+        validated = serializer.is_valid()
+        if validated:
+            return serializer.validated_data
+        else:
+            errors = serializer.errors
+
+    @staticmethod
+    def get_teaching_users_for_course(course_id):
+        json = CanvasAPI.get_canvas_request(partial_url='courses/{0}/users?enrollment_type=teacher&include[]=email'.format(course_id))
+        serializer = UserSerializer(data=json, many=True)
+        validated = serializer.is_valid()
+        if validated:
+            return serializer.validated_data
+        else:
+            errors = serializer.errors
+
+    @staticmethod
+    def get_ta_users_for_course(course_id):
+        json = CanvasAPI.get_canvas_request(partial_url='courses/{0}/users?enrollment_type=ta&include[]=email'.format(course_id))
+        serializer = UserSerializer(data=json, many=True)
         validated = serializer.is_valid()
         if validated:
             return serializer.validated_data
