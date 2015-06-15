@@ -24,7 +24,9 @@ class Enrollment(models.Model):
     type = models.TextField()
     user = models.ManyToManyField(User)
 
-
+class Account(models.Model):
+    id = models.TextField()
+    name = models.TextField()
 
 class Course(models.Model):
     id = models.TextField()

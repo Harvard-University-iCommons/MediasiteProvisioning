@@ -10,7 +10,6 @@ class CanvasAPI:
         serializer = AccountSerializer(data=json, many=True)
         validated = serializer.is_valid()
         if validated:
-            serializer.save()
             return serializer.validated_data
         else:
             errors = serializer.errors

@@ -1,3 +1,8 @@
 from django.contrib import admin
 
-# Register your models here.
+from .models import School
+
+class SchoolAdmin(admin.ModelAdmin):
+    list_display = ('canvas_id', 'name', 'mediasite_root_folder')
+
+admin.site.register(School, SchoolAdmin)

@@ -1,6 +1,5 @@
 from rest_framework import  serializers
-from .apimodels import Course, Term, Enrollment, User
-from .models import Account
+from .apimodels import Course, Term, Enrollment, User, Account
 
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
@@ -9,15 +8,6 @@ class UserSerializer(serializers.ModelSerializer):
 class AccountSerializer(serializers.ModelSerializer):
     class Meta:
         model = Account
-
-    def create(self, validated_data):
-        return Account.objects.create(**validated_data)
-
-    def update(self, instance, validated_data):
-        instance.name = validated_data.get('name', instance.name)
-        instance.mediasite_root_folder = validated_data.get('mediasite_root_folder', instance.mediasite_root_folder)
-        instance.save()
-        return instance
 
 class TermSerializer(serializers.ModelSerializer):
     class Meta:
