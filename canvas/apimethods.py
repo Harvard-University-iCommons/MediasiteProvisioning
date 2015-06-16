@@ -1,6 +1,7 @@
 import requests
-from .serializer import AccountSerializer, CourseSerializer, EnrollmentSerializer, UserSerializer
-from .apimodels import Course
+from .serializer import AccountSerializer, CourseSerializer, EnrollmentSerializer, UserSerializer, ModuleSerializer
+from .serializer import ModuleItemSerializer
+from .apimodels import Course, Module, ModuleItem
 
 
 class CanvasAPI:
@@ -36,6 +37,31 @@ class CanvasAPI:
             return serializer.validated_data
         else:
             errors = serializer.errors
+
+    @staticmethod
+    def get_modules(course_id):
+        json = CanvasAPI.get_canvas_request(
+            partial_url='courses/{0}/modules'.format(course_id)
+        )
+        serializer = ModuleSerializer(data=json, many=True)
+        validated = serializer.is_valid()
+        if validated:
+            return serializer.validated_data
+        else:
+            errors = serializer.errors
+
+    @staticmethod
+    def create_module(course_id, module_name):
+        module = Module(name = module_name)
+        return CanvasAPI.post_canvas_request(partial_url='courses{0}/modules'.format(course_id), data = module)
+
+    @staticmethod
+    def get_or_create_module(course_id, module_name):
+        module = filter(lambda x: x['name'] == module_name, CanvasAPI.get_modules(course_id))
+        if module is None:
+            module = CanvasAPI.create_module(course_id, module_name)
+        # TODO: make sure there is only one module of this name
+        return module
 
     @staticmethod
     def get_enrollments_for_teachers_and_tas(course_id):
@@ -80,10 +106,30 @@ class CanvasAPI:
 
     @staticmethod
     def get_canvas_request(partial_url):
-        # TODO: pull user_token from secure store
-        user_token = '1875~Op1MVZaDnZn8nAHB4eJsRda2YkYHdJKIHxNe0mry09Xnug9gS5qZVGkXUCNn1bD2'
-        # TODO: make canvas URL a configuration parameter
-        url = 'https://canvas.harvard.edu/api/v1/' + partial_url
-        headers = {'Authorization': 'Bearer ' + user_token}
-        r = requests.get(url, headers = headers)
+        r = requests.get(url= CanvasAPI.get_canvas_url(partial_url), headers = CanvasAPI.get_canvas_headers())
         return r.json()
+
+    @staticmethod
+    def post_canvas_request(partial_url, data):
+        r = requests.post(url = CanvasAPI.get_canvas_url(partial_url), data=data, headers = CanvasAPI.get_canvas_headers())
+
+    @staticmethod
+    def get_canvas_url(partial_url):
+        # TODO: make canvas URL a configuration parameter
+        if CanvasAPI.is_production():
+            return 'https://canvas.harvard.edu/api/v1/{0}'.format(partial_url)
+        else:
+            return 'https://canvas-sandbox.tlt.harvard.edu/api/v1/{0}'.format(partial_url)
+
+    @staticmethod
+    def get_canvas_headers():
+        # TODO: pull user_token from secure store
+        # default to sandbox user_token
+        user_token = 'OPMm7g8AAISwhGh0cS8Vn6pnKmsJBwFSHzsnAMCRAf4btYzmJtXUShjnGFDsUCET'
+        if CanvasAPI.is_production():
+            user_token = '1875~Op1MVZaDnZn8nAHB4eJsRda2YkYHdJKIHxNe0mry09Xnug9gS5qZVGkXUCNn1bD2'
+        return {'Authorization': 'Bearer ' + user_token}
+
+    @staticmethod
+    def is_production():
+        return False;

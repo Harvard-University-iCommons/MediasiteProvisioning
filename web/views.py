@@ -20,13 +20,16 @@ def search(request):
             if len(results.search_results) > 0:
                 # using counters and enumerations to be able to change the result set by reference
                 for n, course in enumerate(results.search_results):
+                    course_id = course['id']
                     # update the enrollment data which is not pulled by the search API
                     if False:
-                        results.search_results[n]['enrollments'] = \
-                            get_enrollments(course_id=course['id'], update_user_email=False)
+                        course['enrollments'] = get_enrollments(course_id=course_id, update_user_email=False)
 
                     # get the teaching users
-                    results.search_results[n]['teaching_users'] = CanvasAPI.get_teaching_users_for_course(course['id'])
+                    course['teaching_users'] = CanvasAPI.get_teaching_users_for_course(course_id)
+
+                    # get the modules
+                    course['modules'] = CanvasAPI.get_modules(course_id)
 
                     # find and add terms
                     term = course['term']
@@ -38,6 +41,9 @@ def search(request):
                         year = course['start_at'].year
                         if year not in years:
                             years.append(year)
+
+                    # set the value of the search results to the modified value
+                    results.search_results[n] = course
 
                 results.terms = terms
                 results.years = years

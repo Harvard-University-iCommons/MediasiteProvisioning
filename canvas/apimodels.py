@@ -28,6 +28,19 @@ class Account(models.Model):
     id = models.TextField()
     name = models.TextField()
 
+class ModuleItem(models.Model):
+    id = models.TextField()
+    module_id = models.TextField()
+    title = models.TextField()
+    external_url = models.TextField()
+    type = models.TextField()
+    new_tab = models.BooleanField()
+
+class Module(models.Model):
+    id = models.TextField()
+    name = models.TextField()
+    items = models.ManyToManyField(ModuleItem)
+
 class Course(models.Model):
     id = models.TextField()
     sis_course_id = models.TextField(blank=True, null=True)
@@ -38,7 +51,9 @@ class Course(models.Model):
     enrollment_term_id = models.TextField()
     enrollments = models.ManyToManyField(Enrollment, blank=True, null=True)
     teaching_users = models.ManyToManyField(User, blank=True, null=True)
-    term = models.ManyToManyField(Term)
+    term = models.ManyToManyField(Term, blank=True, null=True)
     start_at = models.DateTimeField(blank=True, null=True)
     end_at = models.DateTimeField(blank=True, null=True)
     total_students = models.IntegerField(null=True)
+    modules = models.ManyToManyField(Module, null=True, blank=True)
+

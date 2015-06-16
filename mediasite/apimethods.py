@@ -2,7 +2,7 @@ import requests
 
 from .serializer import FolderSerializer, FolderPermissionSerializer
 
-def get_folder(name, parent_folder_id):
+def get_folder(name, parent_folder_id = 'bc609924a0314d2baf5edbc8524f017614'):
     url = 'Folders?$filter=ParentFolderId eq \'{0}\' and Name eq \'{1}\''.format(parent_folder_id, name)
     json = get_mediasite_request(url)
     serializer = FolderSerializer(json)
