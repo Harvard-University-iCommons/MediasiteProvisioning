@@ -15,10 +15,11 @@ class TermSerializer(serializers.ModelSerializer):
 
 class ModuleItemSerializer(serializers.ModelSerializer):
     class Meta:
-        module = ModuleItem
+        model = ModuleItem
 
 class ModuleSerializer(serializers.ModelSerializer):
     items = ModuleItemSerializer(many=True, allow_null=True, default=None)
+
     class Meta:
         model = Module
 

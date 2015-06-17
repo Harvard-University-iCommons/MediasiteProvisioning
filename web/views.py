@@ -28,8 +28,10 @@ def search(request):
                     # get the teaching users
                     course['teaching_users'] = CanvasAPI.get_teaching_users_for_course(course_id)
 
-                    # get the modules
-                    course['modules'] = CanvasAPI.get_modules(course_id)
+                    # get the Mediasite module
+                    mediasite_module = CanvasAPI.get_module(course_id, module_name='Mediasite')
+                    if mediasite_module is not None and mediasite_module['items_count'] > 0:
+                        mediasite_app = CanvasAPI.get_module_item(course_id, mediasite_module['id'], title='Course Lecture Video', type='ExternalTool')
 
                     # find and add terms
                     term = course['term']

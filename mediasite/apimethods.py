@@ -32,9 +32,11 @@ def post_mediasite_request(url, body):
     return mediasite_request(url=url, method='POST', body=body)
 
 def mediasite_request(url, method, body):
-    url = 'https://sandbox.mediasite.video.harvard.edu/mediasite/api/v1/' + url
+    url = 'https://dvsdev.mediasite.video.harvard.edu/mediasite/api/v1/' + url
+    #url = 'https://sandbox.mediasite.video.harvard.edu/mediasite/api/v1/' + url
     auth = ('Nick_Carmello', 'daft-jaggy-beauty')
-    api_key = 'e368e3bb-4a6a-48a7-af17-a868300c6d63'
+    api_key = '4746f072-7faa-4b91-8fdf-3b3aca910c26'
+    #api_key = 'e368e3bb-4a6a-48a7-af17-a868300c6d63'
     headers = {'SfIdentTicket': api_key}
     if method == 'POST':
         r = requests.post(url, auth=auth, headers=headers, params=body)

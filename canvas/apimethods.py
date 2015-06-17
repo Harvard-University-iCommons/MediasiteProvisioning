@@ -56,12 +56,33 @@ class CanvasAPI:
         return CanvasAPI.post_canvas_request(partial_url='courses{0}/modules'.format(course_id), data = module)
 
     @staticmethod
+    def get_module(course_id, module_name):
+        return filter(lambda x: x['name'] == module_name, CanvasAPI.get_modules(course_id)).__next__()
+
+    @staticmethod
     def get_or_create_module(course_id, module_name):
-        module = filter(lambda x: x['name'] == module_name, CanvasAPI.get_modules(course_id))
+        module = CanvasAPI.get_module(course_id, module_name)
         if module is None:
             module = CanvasAPI.create_module(course_id, module_name)
         # TODO: make sure there is only one module of this name
         return module
+
+    @staticmethod
+    def get_module_items(course_id, module_id):
+        json = CanvasAPI.get_canvas_request(
+            partial_url='courses/{0}/modules/{1}/items'.format(course_id, module_id)
+        )
+        serializer = ModuleItemSerializer(data=json, many=True)
+        validated = serializer.is_valid()
+        if validated:
+            return serializer.validated_data
+        else:
+            errors = serializer.errors
+
+    @staticmethod
+    def get_module_item(course_id, module_id, title, type):
+        module_items = CanvasAPI.get_module_items(course_id, module_id)
+        return filter(lambda x: x['title'] == title and x['type'] == type, module_items).__next__()
 
     @staticmethod
     def get_enrollments_for_teachers_and_tas(course_id):
@@ -86,7 +107,8 @@ class CanvasAPI:
 
     @staticmethod
     def get_teaching_users_for_course(course_id):
-        json = CanvasAPI.get_canvas_request(partial_url='courses/{0}/users?enrollment_type=teacher&include[]=email'.format(course_id))
+        json = CanvasAPI.get_canvas_request(partial_url='courses/{0}/users?enrollment_type=teacher&include[]=email'
+                                            .format(course_id))
         serializer = UserSerializer(data=json, many=True)
         validated = serializer.is_valid()
         if validated:
@@ -96,7 +118,8 @@ class CanvasAPI:
 
     @staticmethod
     def get_ta_users_for_course(course_id):
-        json = CanvasAPI.get_canvas_request(partial_url='courses/{0}/users?enrollment_type=ta&include[]=email'.format(course_id))
+        json = CanvasAPI.get_canvas_request(partial_url='courses/{0}/users?enrollment_type=ta&include[]=email'
+                                            .format(course_id))
         serializer = UserSerializer(data=json, many=True)
         validated = serializer.is_valid()
         if validated:
@@ -111,7 +134,8 @@ class CanvasAPI:
 
     @staticmethod
     def post_canvas_request(partial_url, data):
-        r = requests.post(url = CanvasAPI.get_canvas_url(partial_url), data=data, headers = CanvasAPI.get_canvas_headers())
+        r = requests.post(url = CanvasAPI.get_canvas_url(partial_url), data=data,
+                          headers = CanvasAPI.get_canvas_headers())
 
     @staticmethod
     def get_canvas_url(partial_url):

@@ -40,6 +40,7 @@ class Module(models.Model):
     id = models.TextField()
     name = models.TextField()
     items = models.ManyToManyField(ModuleItem)
+    items_count = models.IntegerField()
 
 class Course(models.Model):
     id = models.TextField()
