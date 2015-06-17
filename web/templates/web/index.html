@@ -1,6 +1,11 @@
 {% load staticfiles %}
 
 <link rel="stylesheet" type="text/css" href="{% static "web/style.css" %}" />
+{% if settings.DEBUG %}
+    <script src="http://code.jquery.com/jquery-1.11.3.js"></script>
+{% else %}
+    <script src="http://code.jquery.com/jquery-1.11.3.min.js"></script>
+{% endif %}
 
 <div>
     <!-- Header -->
@@ -74,6 +79,21 @@
                             {% endif %}
 
                         </div>
+                    <div>
+                        {% if course.canvas_mediasite_module_item %}
+                            <a href="{{ course.canvas_mediasite_module_item.external_url }}">Mediasite Catalog</a>
+                        {% else %}
+                            Mediasite is not provisioned.
+                            {%  if course.term %}
+                                Provision Mediasite?
+                                <button onclick="ProvisionMediasite('{{ results.school.mediasite_root_folder }}',
+                                        '{{ course.term.name }}',
+                                        '{{ course.id }}')">Provision</button>
+                            {% else %}
+                                Mediasite cannot be provisioned because the course does not have a term.
+                            {% endif %}
+                        {% endif %}
+                    </div>
                     </div>
                     <br />
                 {% endfor %}
@@ -84,6 +104,24 @@
 
     </div>
 
+<script type="application/javascript">
+    function ProvisionMediasite(mediasiteRootFolder, courseTerm, courseId){
+        $.ajax({
+            type: 'POST',
+            url: '{% url 'web:provision' %}',
+            datatype: 'json',
+            data: {
+                csrfmiddlewaretoken: '{{ csrf_token }}',
+                root_folder: mediasiteRootFolder,
+                term: courseTerm,
+                course_id: courseId
+            },
+            success: function(json) {
+                alert("success");
+            }
+        })
+    };
+</script>
 
 </div>
 

@@ -1,6 +1,13 @@
 from django.db import models
 
 # Create your models here.
+
+class BaseSerializedModel(models.Model):
+    Id = models.TextField(blank=True, null=True)
+
+    def __init__(self, **kwargs):
+        self.__dict__.update(kwargs)
+
 class AccessControl(models.Model):
     RoleId = models.TextField()
     PermissionMask = models.IntegerField()
@@ -10,13 +17,12 @@ class Catalog(models.Model):
     LinkedFolderId = models.TextField()
     Name = models.TextField()
 
-class Folder(models.Model):
-    Id = models.TextField()
+class Folder(BaseSerializedModel):
     Name = models.TextField()
     Owner = models.TextField()
-    Description = models.TextField()
-    CreationDate = models.DateField()
-    LastModified = models.DateField()
+    Description = models.TextField(blank=True, null=True)
+    CreationDate = models.DateTimeField()
+    LastModified = models.DateTimeField()
     ParentFolderId = models.TextField()
     Recycled = models.BooleanField()
     Type = models.TextField()
@@ -48,5 +54,5 @@ class UserProfile(models.Model):
     Activated = models.BooleanField()
     TimeZone = models.IntegerField()
 
-class Home(models.Model):
+class Home(BaseSerializedModel):
     RootFolderId = models.TextField()

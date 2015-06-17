@@ -3,8 +3,10 @@ from .serializer import AccountSerializer, CourseSerializer, EnrollmentSerialize
 from .serializer import ModuleItemSerializer
 from .apimodels import Course, Module, ModuleItem, Account, User
 
-
 class CanvasAPI:
+    ##########################################################
+    # Accounts
+    ##########################################################
     @staticmethod
     def get_accounts_for_current_user():
         json = CanvasAPI.get_canvas_request(partial_url='accounts')
@@ -15,6 +17,9 @@ class CanvasAPI:
         else:
             errors = serializer.errors
 
+    ##########################################################
+    # Courses
+    ##########################################################
     @staticmethod
     def search_courses(account_id, search_term):
         json = CanvasAPI.get_canvas_request(
@@ -53,6 +58,9 @@ class CanvasAPI:
         else:
             errors = serializer.errors
 
+    ##########################################################
+    # Modules
+    ##########################################################
     @staticmethod
     def get_modules(course_id):
         json = CanvasAPI.get_canvas_request(
@@ -64,12 +72,6 @@ class CanvasAPI:
             return [Module(**attrs) for attrs in serializer.validated_data]
         else:
             errors = serializer.errors
-
-    @staticmethod
-    def get_mediasite_module_item(course_id):
-        mediasite_module = CanvasAPI.get_module(course_id, module_name='Mediasite')
-        if mediasite_module is not None and mediasite_module.items_count > 0:
-            return CanvasAPI.get_module_item(course_id, mediasite_module.id, title='Course Lecture Video', type='ExternalTool')
 
     @staticmethod
     def create_module(course_id, module_name):
@@ -88,6 +90,9 @@ class CanvasAPI:
         # TODO: make sure there is only one module of this name
         return module
 
+    ##########################################################
+    # Module items
+    ##########################################################
     @staticmethod
     def get_module_items(course_id, module_id):
         json = CanvasAPI.get_canvas_request(
@@ -105,6 +110,15 @@ class CanvasAPI:
         module_items = CanvasAPI.get_module_items(course_id, module_id)
         return filter(lambda x: x.title == title and x.type == type, module_items).__next__()
 
+    @staticmethod
+    def get_mediasite_module_item(course_id):
+        mediasite_module = CanvasAPI.get_module(course_id, module_name='Mediasite')
+        if mediasite_module is not None and mediasite_module.items_count > 0:
+            return CanvasAPI.get_module_item(course_id, mediasite_module.id, title='Course Lecture Video', type='ExternalTool')
+
+    ##########################################################
+    # Users, including enrollments
+    ##########################################################
     @staticmethod
     def get_enrollments_for_teachers_and_tas(course_id):
         json = CanvasAPI.get_canvas_request(partial_url='courses/{0}/enrollments?type[]={1}&type[]={2}'
@@ -158,6 +172,9 @@ class CanvasAPI:
         else:
             errors = serializer.errors
 
+    ##########################################################
+    # API methods
+    ##########################################################
     @staticmethod
     def get_canvas_request(partial_url):
         r = requests.get(url= CanvasAPI.get_canvas_url(partial_url), headers = CanvasAPI.get_canvas_headers())
@@ -187,4 +204,4 @@ class CanvasAPI:
 
     @staticmethod
     def is_production():
-        return False;
+        return False
