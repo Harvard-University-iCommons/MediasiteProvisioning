@@ -20,27 +20,15 @@ def search(request):
             if len(results.search_results) > 0:
                 # using counters and enumerations to be able to change the result set by reference
                 for n, course in enumerate(results.search_results):
-                    course_id = course['id']
-                    # update the enrollment data which is not pulled by the search API
-                    if False:
-                        course['enrollments'] = get_enrollments(course_id=course_id, update_user_email=False)
-
-                    # get the teaching users
-                    course['teaching_users'] = CanvasAPI.get_teaching_users_for_course(course_id)
-
-                    # get the Mediasite module
-                    mediasite_module = CanvasAPI.get_module(course_id, module_name='Mediasite')
-                    if mediasite_module is not None and mediasite_module['items_count'] > 0:
-                        mediasite_app = CanvasAPI.get_module_item(course_id, mediasite_module['id'], title='Course Lecture Video', type='ExternalTool')
-
                     # find and add terms
-                    term = course['term']
-                    if term not in terms:
-                        terms.append(term)
+                    term = course.term
+                    if term is not None:
+                        if term not in terms:
+                            terms.append(term)
 
                     # find and add years
-                    if course['start_at'] is not None:
-                        year = course['start_at'].year
+                    if course.start_at is not None:
+                        year = course.start_at.year
                         if year not in years:
                             years.append(year)
 
@@ -57,11 +45,4 @@ def search(request):
 
     return render(request, 'web/index.html', {'form' : form, 'results' : results})
 
-def get_enrollments(course_id, update_user_email):
-    enrollments = CanvasAPI.get_enrollments_for_teachers_and_tas(course_id=course_id)
-    # find users for enrollments to add the email address, not available in the
-    # enrollments API call
-    if update_user_email:
-        for enrollment_counter, enrollment in enumerate(enrollments):
-            enrollments[enrollment_counter]['user'] = CanvasAPI.get_user_profile(enrollment['user']['id'])
-    return enrollments
+

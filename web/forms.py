@@ -7,16 +7,14 @@ class IndexForm(forms.Form):
     account_choices = list()
     accounts = CanvasAPI.get_accounts_for_current_user()
     for account in accounts:
-        account_id = account['id']
-        account_name = account['name']
-        account_choice = ((account_id, account_name))
+        account_choice = ((account.id, account.name))
         account_choices.append(account_choice)
         # we also save/update account information
         # TODO: we may want to look at this for performance
-        school = School(canvas_id = account_id, name = account_name)
+        school = School(canvas_id = account.id, name = account.name)
         try:
-            school = School.objects.get(canvas_id = account_id)
-            school.name = account_name
+            school = School.objects.get(canvas_id = account.id)
+            school.name = account.name
         except ObjectDoesNotExist:
             # do nothing since we initialized school above
             pass

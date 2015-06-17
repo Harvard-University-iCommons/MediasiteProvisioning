@@ -47,3 +47,6 @@ class UserProfile(models.Model):
     Email = models.EmailField()
     Activated = models.BooleanField()
     TimeZone = models.IntegerField()
+
+class Home(models.Model):
+    RootFolderId = models.TextField()

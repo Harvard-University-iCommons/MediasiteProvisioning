@@ -1,5 +1,5 @@
 from rest_framework import  serializers
-from .apimodels import Role, Catalog, ResourcePermission, FolderPermission, Folder
+from .apimodels import Role, Catalog, ResourcePermission, FolderPermission, Folder, Home
 
 class RoleSerializer(serializers.ModelSerializer):
     class Meta:
@@ -20,3 +20,7 @@ class FolderPermissionSerializer(serializers.ModelSerializer):
 class FolderSerializer(serializers.ModelSerializer):
     class Meta:
         model = Folder
+
+class HomeSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Home

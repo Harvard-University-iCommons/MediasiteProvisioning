@@ -1,7 +1,7 @@
 import requests
 from .serializer import AccountSerializer, CourseSerializer, EnrollmentSerializer, UserSerializer, ModuleSerializer
 from .serializer import ModuleItemSerializer
-from .apimodels import Course, Module, ModuleItem
+from .apimodels import Course, Module, ModuleItem, Account, User
 
 
 class CanvasAPI:
@@ -11,7 +11,7 @@ class CanvasAPI:
         serializer = AccountSerializer(data=json, many=True)
         validated = serializer.is_valid()
         if validated:
-            return serializer.validated_data
+            return [Account(**attrs) for attrs in serializer.validated_data]
         else:
             errors = serializer.errors
 
@@ -22,7 +22,22 @@ class CanvasAPI:
         serializer = CourseSerializer(data=json, many=True)
         validated = serializer.is_valid()
         if validated:
-            return serializer.validated_data
+            search_results = [Course(**attrs) for attrs in serializer.validated_data]
+            for n, course in enumerate(search_results):
+                # update the enrollment data which is not pulled by the search API
+                if False:
+                    course.enrollments = CanvasAPI.get_enrollments(course_id=course.id, update_user_email=False)
+
+                # get the teaching users
+                course.teaching_users = CanvasAPI.get_teaching_users_for_course(course.id)
+
+                # get the Mediasite module
+                course.canvas_mediasite_module_item = CanvasAPI.get_mediasite_module_item(course.id)
+
+                # set the value of the search results to the modified value
+                search_results[n] = course
+
+            return search_results
         else:
             errors = serializer.errors
 
@@ -34,7 +49,7 @@ class CanvasAPI:
         serializer = CourseSerializer(data=json)
         validated = serializer.is_valid()
         if validated:
-            return serializer.validated_data
+            return Course(**serializer.validated_data)
         else:
             errors = serializer.errors
 
@@ -46,9 +61,15 @@ class CanvasAPI:
         serializer = ModuleSerializer(data=json, many=True)
         validated = serializer.is_valid()
         if validated:
-            return serializer.validated_data
+            return [Module(**attrs) for attrs in serializer.validated_data]
         else:
             errors = serializer.errors
+
+    @staticmethod
+    def get_mediasite_module_item(course_id):
+        mediasite_module = CanvasAPI.get_module(course_id, module_name='Mediasite')
+        if mediasite_module is not None and mediasite_module.items_count > 0:
+            return CanvasAPI.get_module_item(course_id, mediasite_module.id, title='Course Lecture Video', type='ExternalTool')
 
     @staticmethod
     def create_module(course_id, module_name):
@@ -57,7 +78,7 @@ class CanvasAPI:
 
     @staticmethod
     def get_module(course_id, module_name):
-        return filter(lambda x: x['name'] == module_name, CanvasAPI.get_modules(course_id)).__next__()
+        return filter(lambda x: x.name == module_name, CanvasAPI.get_modules(course_id)).__next__()
 
     @staticmethod
     def get_or_create_module(course_id, module_name):
@@ -75,14 +96,14 @@ class CanvasAPI:
         serializer = ModuleItemSerializer(data=json, many=True)
         validated = serializer.is_valid()
         if validated:
-            return serializer.validated_data
+            return [ModuleItem(**attrs) for attrs in serializer.validated_data]
         else:
             errors = serializer.errors
 
     @staticmethod
     def get_module_item(course_id, module_id, title, type):
         module_items = CanvasAPI.get_module_items(course_id, module_id)
-        return filter(lambda x: x['title'] == title and x['type'] == type, module_items).__next__()
+        return filter(lambda x: x.title == title and x.type == type, module_items).__next__()
 
     @staticmethod
     def get_enrollments_for_teachers_and_tas(course_id):
@@ -91,9 +112,19 @@ class CanvasAPI:
         serializer = EnrollmentSerializer(data=json, many=True)
         validated = serializer.is_valid()
         if validated:
-            return serializer.validated_data
+            return [User(**attrs) for attrs in serializer.validated_data]
         else:
             errors = serializer.errors
+
+    @staticmethod
+    def get_enrollments(course_id, update_user_email):
+        enrollments = CanvasAPI.get_enrollments_for_teachers_and_tas(course_id=course_id)
+        # find users for enrollments to add the email address, not available in the
+        # enrollments API call
+        if update_user_email:
+            for enrollment_counter, enrollment in enumerate(enrollments):
+                enrollments[enrollment_counter]['user'] = CanvasAPI.get_user_profile(enrollment['user']['id'])
+        return enrollments
 
     @staticmethod
     def get_user_profile(user_id):
@@ -101,7 +132,7 @@ class CanvasAPI:
         serializer = UserSerializer(data=json)
         validated = serializer.is_valid()
         if validated:
-            return serializer.validated_data
+            return User(**serializer.validated_data)
         else:
             errors = serializer.errors
 
@@ -112,7 +143,7 @@ class CanvasAPI:
         serializer = UserSerializer(data=json, many=True)
         validated = serializer.is_valid()
         if validated:
-            return serializer.validated_data
+            return [User(**attr) for attr in serializer.validated_data]
         else:
             errors = serializer.errors
 
@@ -123,7 +154,7 @@ class CanvasAPI:
         serializer = UserSerializer(data=json, many=True)
         validated = serializer.is_valid()
         if validated:
-            return serializer.validated_data
+            return [User(**attrs) for attrs in serializer.validated_data]
         else:
             errors = serializer.errors
 
