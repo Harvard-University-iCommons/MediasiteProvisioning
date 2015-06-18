@@ -2,11 +2,20 @@ import requests
 import json
 from requests.auth import HTTPBasicAuth
 
-from .serializer import FolderSerializer, FolderPermissionSerializer, HomeSerializer
-from .apimodels import Home, Folder
+from .serializer import FolderSerializer, FolderPermissionSerializer, HomeSerializer, CatalogSerializer
+from .serializer import RoleSerializer, ResourcePermissionSerializer, FolderPermissionSerializer
+from .serializer import UserProfileSerializer
+from .apimodels import Home, Folder, Catalog, Role, ResourcePermission, FolderPermission, AccessControl, UserProfile
 
 
 class MediasiteAPI:
+    READ_ONLY_PERMISSION_FLAG = 5
+    READ_WRITE_PERMISSION_FLAG = 7
+    NO_ACCESS_PERMISSION_FLAG = 0
+
+    ######################################################
+    # Folders
+    ######################################################
     _root_folder_id = None
 
     @staticmethod
@@ -61,6 +70,151 @@ class MediasiteAPI:
             folder = MediasiteAPI.create_folder(name, parent_folder_id)
         return folder
 
+    ######################################################
+    # Catalogs
+    ######################################################
+    @staticmethod
+    def get_or_create_catalog(catalog_name, course_folder_id):
+        catalog = MediasiteAPI.get_catalog(catalog_name, course_folder_id)
+        if catalog is None:
+            catalog = MediasiteAPI.create_catalog(catalog_name, course_folder_id)
+        return catalog
+
+    @staticmethod
+    def get_catalog(catalog_name, course_folder_id):
+        url = 'Catalogs?$filter=Name eq \'{0}\''.format(catalog_name)
+        json = MediasiteAPI.get_mediasite_request(url)
+        # TODO: the json returned is in the oData format, and there do not appear to be any
+        # python libraries that parse oData.  we can extract the 'value' property of the list to get at the
+        # underlying json, but this is not a generally good approach
+        if float(json['odata.count']) > 0:
+            serializer = CatalogSerializer(data=json['value'], many=True)
+            if serializer.is_valid():
+                # TODO: this may work, but could be cleaned up
+                catalogs = [Catalog(**attrs) for attrs in serializer.validated_data]
+                return filter(lambda x : x.LinkedFolderId == course_folder_id, catalogs).__next__()
+            else:
+                errors = serializer.errors
+
+    @staticmethod
+    def create_catalog(catalog_name, course_folder_id):
+        catalog_to_create = dict(
+            Name = catalog_name,
+            LinkedFolderId = course_folder_id
+        )
+        json = MediasiteAPI.post_mediasite_request('Catalogs', catalog_to_create)
+        serializer = CatalogSerializer(data=json)
+        if serializer.is_valid():
+            return Catalog(**serializer.validated_data)
+        else:
+            errors = serializer.errors
+
+    ######################################################
+    # Permissions
+    ######################################################
+    @staticmethod
+    def get_resource_permissions(folder_id):
+        url = 'ResourcePermissions(\'{0}\')'.format(folder_id)
+        json = MediasiteAPI.get_mediasite_request(url)
+        # TODO: the json returned is in the oData format, and there do not appear to be any
+        # python libraries that parse oData.  we can extract the 'value' property of the list to get at the
+        # underlying json, but this is not a generally good approach
+        serializer = ResourcePermissionSerializer(data=json)
+        if serializer.is_valid():
+            return ResourcePermission(**serializer.validated_data)
+        else:
+            errors = serializer.errors
+
+    @staticmethod
+    def assign_permissions_to_folder(folder_id, folder_permissions):
+        url = 'Folders(\'{0}\')/UpdatePermissions'.format(folder_id)
+        json = MediasiteAPI.post_mediasite_request(url, body=folder_permissions)
+        #TODO: what does the json return?
+
+    @staticmethod
+    def get_folder_permissions(folder_id):
+        folder_permissions = FolderPermission()
+        permissions_for_folder = MediasiteAPI.get_resource_permissions(folder_id)
+        if permissions_for_folder is not None:
+            folder_permissions.Owner = permissions_for_folder.Owner
+            folder_permissions.Permissions = permissions_for_folder.AccessControlList
+        return folder_permissions
+
+    @staticmethod
+    def update_folder_permissions(folder_permissions, role, permission_mask):
+        existing_permission = next((fp for i, fp in enumerate(folder_permissions.Permissions) if fp.RoleId == role.Id), None)
+        if existing_permission is not None:
+            if permission_mask == MediasiteAPI.NO_ACCESS_PERMISSION_FLAG:
+                folder_permissions.Permissions.remove(existing_permission)
+            else:
+                existing_permission.PermissionMask = permission_mask
+        elif permission_mask != MediasiteAPI.NO_ACCESS_PERMISSION_FLAG:
+            folder_permissions.Permissions.append(
+                AccessControl(RoleId = role.Id, PermissionMask = permission_mask)
+            )
+        return folder_permissions
+
+
+    ######################################################
+    # Roles
+    ######################################################
+    @staticmethod
+    def create_role(role_name):
+        role_to_create = dict(
+            Name = role_name
+        )
+        json = MediasiteAPI.post_mediasite_request('Roles', body=role_to_create)
+        serializer = RoleSerializer(data=json)
+        if serializer.is_valid():
+            return Role(**serializer.validated_data)
+        else:
+            errors = serializer.errors
+
+    @staticmethod
+    def get_role(role_name):
+        url = 'Roles?$filter=Name eq \'{0}\''.format(role_name)
+        json = MediasiteAPI.get_mediasite_request(url)
+        # TODO: the json returned is in the oData format, and there do not appear to be any
+        # python libraries that parse oData.  we can extract the 'value' property of the list to get at the
+        # underlying json, but this is not a generally good approach
+        serializer = RoleSerializer(data=json['value'], many=True)
+        if serializer.is_valid():
+            roles = [Role(**attrs) for attrs in serializer.validated_data]
+            if len(roles) == 1:
+                return roles[0]
+        else:
+            errors = serializer.errors
+
+    @staticmethod
+    def get_or_create_role(role_name):
+        role = MediasiteAPI.get_role(role_name)
+        if role is None:
+            role = MediasiteAPI.create_role(role_name)
+        return role
+
+    ######################################################
+    # User Profiles
+    ######################################################
+    @staticmethod
+    def get_user_by_email_address(email_address):
+        url =  'UserProfiles?$filter=endswith(Email, \'{0}\')'.format(email_address)
+        json = MediasiteAPI.get_mediasite_request(url)
+        # TODO: the json returned is in the oData format, and there do not appear to be any
+        # python libraries that parse oData.  we can extract the 'value' property of the list to get at the
+        # underlying json, but this is not a generally good approach
+        if float(json['odata.count']) == 1:
+            serializer = UserProfileSerializer(data=json['value'], many=True)
+            if serializer.is_valid():
+                # TODO: this may work, but could be cleaned up
+                user_profiles = [UserProfile(**attrs) for attrs in serializer.validated_data][0]
+                return filter(lambda x : x.Email == email_address, user_profiles).__next__()
+            else:
+                errors = serializer.errors
+
+
+    ######################################################
+    # Generic API Methods
+    ######################################################
     def get_mediasite_request(url):
         return MediasiteAPI.mediasite_request(url=url, method='GET', body=None)
 

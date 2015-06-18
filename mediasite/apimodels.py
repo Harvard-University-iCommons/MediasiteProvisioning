@@ -4,16 +4,16 @@ from django.db import models
 
 class BaseSerializedModel(models.Model):
     Id = models.TextField(blank=True, null=True)
+    BaseSerializedModelId= models.TextField(blank=True, null=True)
 
     def __init__(self, **kwargs):
         self.__dict__.update(kwargs)
 
-class AccessControl(models.Model):
+class AccessControl(BaseSerializedModel):
     RoleId = models.TextField()
     PermissionMask = models.IntegerField()
 
-class Catalog(models.Model):
-    Id = models.TextField()
+class Catalog(BaseSerializedModel):
     LinkedFolderId = models.TextField()
     Name = models.TextField()
 
@@ -30,24 +30,27 @@ class Folder(BaseSerializedModel):
     IsCopyDestination = models.BooleanField()
     IsReviewEditApproveEnabled = models.BooleanField()
 
-class FolderPermission(models.Model):
-    Id = models.TextField()
-    "TODO: check with Dave whether this is the right way to model this"
-    Permissions = models.ManyToManyField(AccessControl)
+class FolderPermission(BaseSerializedModel):
+    Owner = models.TextField()
+    Permissions = list()
 
-class ResourcePermission(models.Model):
-    Id = models.TextField()
+class ResourcePermission(BaseSerializedModel):
     Owner = models.TextField()
     InheritPermissions = models.BooleanField()
-    AccessControlList = models.ManyToManyField(AccessControl)
+    AccessControlList = list()
 
-class Role(models.Model):
-    Id = models.TextField()
+    def __init__(self, **kwargs):
+        # TODO: don't really like this, check with Dave or Jeff to see if it's ok
+        self.__dict__.update(kwargs)
+        access_control_list = kwargs['AccessControlList']
+        if access_control_list:
+            self.AccessControlList = [AccessControl(**attrs) for attrs in access_control_list]
+
+class Role(BaseSerializedModel):
     Name = models.TextField()
-    Description = models.TextField()
+    Description = models.TextField(null=True, blank=True)
 
-class UserProfile(models.Model):
-    Id = models.TextField()
+class UserProfile(BaseSerializedModel):
     UserName = models.TextField()
     DisplayName = models.TextField()
     Email = models.EmailField()
