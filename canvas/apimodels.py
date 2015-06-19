@@ -4,7 +4,7 @@ from django.db import models
 # Create your models here.
 
 class BaseSerializedModel(models.Model):
-    id = models.IntegerField()
+    id = models.IntegerField(blank=True, null=True)
 
     def __init__(self, **kwargs):
         self.__dict__.update(kwargs)
@@ -14,19 +14,26 @@ class User(BaseSerializedModel):
     sis_user_id = models.TextField()
     primary_email = models.TextField(blank=True, null=True)
     email = models.TextField(blank=True, null=True)
+    time_zone = models.TextField(blank=True, null=True)
 
 class Term(BaseSerializedModel):
     name = models.TextField()
     start_at = models.DateTimeField(blank=True, null=True)
     end_at = models.DateTimeField(blank=True, null=True)
 
-class Enrollment(models.Model):
+class Enrollment(BaseSerializedModel):
     type = models.TextField()
     role = models.TextField()
-    role_id = models.IntegerField()
     enrollment_state = models.TextField()
-    type = models.TextField()
-    user = models.ManyToManyField(User)
+    role_id = models.IntegerField(blank=True, null=True)
+    user = None
+
+    def __init__(self, **kwargs):
+        # Enrollment has a hierarchy which needs to be manually initialized
+        self.__dict__.update(kwargs)
+        user = kwargs['user']
+        if user:
+            self.user = User(**user)
 
 class Account(BaseSerializedModel):
     name = models.TextField()
@@ -36,7 +43,7 @@ class ModuleItem(BaseSerializedModel):
     title = models.TextField()
     external_url = models.TextField()
     type = models.TextField()
-    new_tab = models.BooleanField()
+    content_id = models.IntegerField()
 
 class Module(BaseSerializedModel):
     name = models.TextField()
@@ -59,3 +66,8 @@ class Course(BaseSerializedModel):
     term = None
     canvas_mediasite_module_item = None
 
+class ExternalTool(BaseSerializedModel):
+    name = models.TextField()
+    description = models.TextField(blank=True, null=True)
+    url = models.TextField(blank=True, null=True)
+    domain = models.TextField(blank=True, null=True)

@@ -15,6 +15,7 @@ class AccessControl(BaseSerializedModel):
 class Catalog(BaseSerializedModel):
     LinkedFolderId = models.TextField()
     Name = models.TextField()
+    CatalogUrl = models.TextField()
 
 class Folder(BaseSerializedModel):
     Name = models.TextField()
@@ -39,6 +40,7 @@ class ResourcePermission(BaseSerializedModel):
     AccessControlList = list()
 
     def __init__(self, **kwargs):
+        # ResourcePermissions has a hierarchy which needs to be manually initialized
         # TODO: don't really like this, check with Dave or Jeff to see if it's ok
         self.__dict__.update(kwargs)
         access_control_list = kwargs['AccessControlList']

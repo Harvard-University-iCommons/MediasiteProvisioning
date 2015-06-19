@@ -1,5 +1,6 @@
 import requests
 import json
+import uuid
 from requests.auth import HTTPBasicAuth
 
 from .serializer import FolderSerializer, FolderPermissionSerializer, HomeSerializer, CatalogSerializer
@@ -207,16 +208,26 @@ class MediasiteAPI:
         # TODO: the json returned is in the oData format, and there do not appear to be any
         # python libraries that parse oData.  we can extract the 'value' property of the list to get at the
         # underlying json, but this is not a generally good approach
-        if float(json['odata.count']) == 1:
-            serializer = UserProfileSerializer(data=json['value'], many=True)
-            if serializer.is_valid():
-                # TODO: this may work, but could be cleaned up
-                user_profiles = [UserProfile(**attrs) for attrs in serializer.validated_data]
-                if len(user_profiles) == 1:
-                    return user_profiles[0]
-            else:
-                errors = serializer.errors
+        serializer = UserProfileSerializer(data=json['value'], many=True)
+        if serializer.is_valid():
+            # TODO: this may work, but could be cleaned up
+            user_profiles = [UserProfile(**attrs) for attrs in serializer.validated_data]
+            if len(user_profiles) == 1:
+                return user_profiles[0]
+        else:
+            errors = serializer.errors
 
+    @staticmethod
+    def create_user(user):
+        url = 'UserProfiles'
+        json = MediasiteAPI.post_mediasite_request(url=url, body=user.__dict__)
+        serializer = UserProfileSerializer(data=json)
+        if serializer.is_valid():
+            return UserProfile(**serializer.validated_data)
+
+    @staticmethod
+    def convert_user_profile_to_role_id(user_profile_id):
+        return str(uuid.UUID(user_profile_id[:32]))
 
     ######################################################
     # Generic API Methods
@@ -228,11 +239,11 @@ class MediasiteAPI:
         return MediasiteAPI.mediasite_request(url=url, method='POST', body=body)
 
     def mediasite_request(url, method, body):
-        #url = 'https://dvsdev.mediasite.video.harvard.edu/mediasite/api/v1/' + url
-        url = 'https://sandbox.mediasite.video.harvard.edu/mediasite/api/v1/' + url
+        url = 'https://dvsdev.mediasite.video.harvard.edu/mediasite/api/v1/' + url
+        #url = 'https://sandbox.mediasite.video.harvard.edu/mediasite/api/v1/' + url
         auth = HTTPBasicAuth('Nick_Carmello', 'daft-jaggy-beauty')
-        #api_key = '4746f072-7faa-4b91-8fdf-3b3aca910c26'
-        api_key = 'e368e3bb-4a6a-48a7-af17-a868300c6d63'
+        api_key = '4746f072-7faa-4b91-8fdf-3b3aca910c26'
+        #api_key = 'e368e3bb-4a6a-48a7-af17-a868300c6d63'
 
         headers = {'sfapikey': api_key, 'Content-Type': 'application/json'}
         if method == 'POST':

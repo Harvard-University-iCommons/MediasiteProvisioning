@@ -47,11 +47,12 @@ class MediasiteTestCase(TestCase):
             folder_permissions, authenticated_user_role, MediasiteAPI.NO_ACCESS_PERMISSION_FLAG)
 
         # Make sure that Gregory_Carpenter@harvard.edu has editor role
-        # greg = MediasiteAPI.get_user_by_email_address("gregory_carpenter@harvard.edu")
-        # if greg is not None:
-        #     folder_permissions = MediasiteAPI.update_folder_permissions(
-        #         folder_permissions,
-        #         Role(Id = ConvertUserProfileIdToRoleId(greg.id)),  MediasiteAPI.READ_WRITE_PERMISSION_FLAG);
+        greg = MediasiteAPI.get_user_by_email_address("gregory_carpenter@harvard.edu")
+        if greg is not None:
+            folder_permissions = MediasiteAPI.update_folder_permissions(
+                folder_permissions,
+                Role(Id = MediasiteAPI.convert_user_profile_to_role_id(greg.Id)),
+                MediasiteAPI.READ_WRITE_PERMISSION_FLAG)
 
         #Assign permissions to folder
         MediasiteAPI.assign_permissions_to_folder(course_folder.Id, folder_permissions)
