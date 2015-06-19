@@ -93,7 +93,7 @@ class MediasiteAPI:
             if serializer.is_valid():
                 # TODO: this may work, but could be cleaned up
                 catalogs = [Catalog(**attrs) for attrs in serializer.validated_data]
-                return filter(lambda x : x.LinkedFolderId == course_folder_id, catalogs).__next__()
+                return next((c for c in catalogs if c.LinkedFolderId == course_folder_id), None)
             else:
                 errors = serializer.errors
 
