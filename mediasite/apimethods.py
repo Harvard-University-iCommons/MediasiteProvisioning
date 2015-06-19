@@ -40,8 +40,9 @@ class MediasiteAPI:
         if json['odata.count'] == '1':
             serializer = FolderSerializer(data=json['value'], many=True)
             if serializer.is_valid():
-                # TODO: this may work, but could be cleaned up
-                return [Folder(**attrs) for attrs in serializer.validated_data][0]
+                folders = [Folder(**attrs) for attrs in serializer.validated_data]
+                if len(folders) == 1:
+                    return folders[0]
             else:
                 errors = serializer.errors
 
@@ -128,8 +129,12 @@ class MediasiteAPI:
     @staticmethod
     def assign_permissions_to_folder(folder_id, folder_permissions):
         url = 'Folders(\'{0}\')/UpdatePermissions'.format(folder_id)
-        json = MediasiteAPI.post_mediasite_request(url, body=folder_permissions)
-        #TODO: what does the json return?
+        # Need to change the folder_permissions object into a dictionary object that can be cast to json
+        # when posting to the Mediasite API
+        folder_permissions_as_dict = folder_permissions.__dict__
+        folder_permissions_as_dict['Permissions'] = [ac.__dict__ for ac in folder_permissions.Permissions]
+        # this call returns a status object that is probably of no use to us
+        MediasiteAPI.post_mediasite_request(url, body=folder_permissions_as_dict)
 
     @staticmethod
     def get_folder_permissions(folder_id):
@@ -142,10 +147,10 @@ class MediasiteAPI:
 
     @staticmethod
     def update_folder_permissions(folder_permissions, role, permission_mask):
-        existing_permission = next((fp for i, fp in enumerate(folder_permissions.Permissions) if fp.RoleId == role.Id), None)
+        existing_permission = next((fp for fp in folder_permissions.Permissions if fp.RoleId == role.Id), None)
         if existing_permission is not None:
             if permission_mask == MediasiteAPI.NO_ACCESS_PERMISSION_FLAG:
-                folder_permissions.Permissions.remove(existing_permission)
+                folder_permissions.Permissions = [fp for fp in folder_permissions.Permissions if fp.RoleId != role.Id]
             else:
                 existing_permission.PermissionMask = permission_mask
         elif permission_mask != MediasiteAPI.NO_ACCESS_PERMISSION_FLAG:
@@ -206,8 +211,9 @@ class MediasiteAPI:
             serializer = UserProfileSerializer(data=json['value'], many=True)
             if serializer.is_valid():
                 # TODO: this may work, but could be cleaned up
-                user_profiles = [UserProfile(**attrs) for attrs in serializer.validated_data][0]
-                return filter(lambda x : x.Email == email_address, user_profiles).__next__()
+                user_profiles = [UserProfile(**attrs) for attrs in serializer.validated_data]
+                if len(user_profiles) == 1:
+                    return user_profiles[0]
             else:
                 errors = serializer.errors
 
@@ -234,7 +240,3 @@ class MediasiteAPI:
         else:
             r = requests.get(url=url, auth=auth, headers=headers, verify=False)
         return r.json()
-
-
-
-

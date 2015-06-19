@@ -54,4 +54,4 @@ class MediasiteTestCase(TestCase):
         #         Role(Id = ConvertUserProfileIdToRoleId(greg.id)),  MediasiteAPI.READ_WRITE_PERMISSION_FLAG);
 
         #Assign permissions to folder
-        MediasiteAPI.assign_permissions_to_folder(course_folder, folder_permissions)
+        MediasiteAPI.assign_permissions_to_folder(course_folder.Id, folder_permissions)
