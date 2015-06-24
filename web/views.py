@@ -77,8 +77,6 @@ def provision(request):
         oath_consumer_key = external_tool.consumer_key
 
         # get the course from Canvas.
-        # TODO: This may not be necessary since we could pass in all the course attributes, but this is more reliable
-        # and extensible
         course = canvas_api.get_course(course_id)
 
         # course long name
@@ -130,7 +128,7 @@ def provision(request):
             for canvas_teacher in canvas_teachers:
                 teacher_user = MediasiteAPI.get_user_by_email_address(canvas_teacher.user.primary_email)
                 if teacher_user is None:
-                    # TODO: look into creating an appropriate TimeZone for the user
+                    # TODO: very low : look into creating an appropriate TimeZone for the user
                     teacher_user = MediasiteAPI.create_user(
                         UserProfile(UserName=canvas_teacher.user.primary_email,
                                     DisplayName=canvas_teacher.user.name,

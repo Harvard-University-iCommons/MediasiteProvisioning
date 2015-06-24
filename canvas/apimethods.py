@@ -72,7 +72,7 @@ class CanvasAPI:
             for n, course in enumerate(search_results):
                 # get the Mediasite module
                 course.canvas_mediasite_module_item = self.get_mediasite_module_item_by_course(course.id)
-                # TODO:validate that the Canvas Mediasite module points to a real catalog?
+                # TODO: next phase: validate that the Canvas Mediasite module points to a real catalog?
 
                 # set the value of the search results to the modified value
                 search_results[n] = course
@@ -194,7 +194,7 @@ class CanvasAPI:
             mediasite_module = self.create_module(course_id, CanvasAPI.MEDIASITE_MODULE_NAME)
 
         # we only create the mediasite module item, we don't update it
-        # TODO: look into whether we should update it
+        # TODO: next phase : look into whether we should update it
         if mediasite_module_item is None:
             mediasite_module_item = ModuleItem(module_id=mediasite_module.id,
                                                title=CanvasAPI.MEDIASITE_MODULE_ITEM_NAME,
@@ -291,7 +291,7 @@ class CanvasAPI:
 
     @staticmethod
     def get_canvas_url(partial_url):
-        # TODO: make canvas URL a configuration parameter
+        # TODO: now : make canvas URL a configuration parameter
         if CanvasAPI.is_test():
             return 'https://harvard.test.instructure.com/api/v1/{0}'.format(partial_url)
         elif CanvasAPI.is_production():
@@ -302,10 +302,10 @@ class CanvasAPI:
     def get_canvas_headers(self):
         assert(self._user is not None, 'You cannot use the Canvas API without initializing an instance of the class '
                                        'with a user object')
-        # TODO: decrypt encrypted token
+        # TODO: now: decrypt encrypted token
         user_token = self._user.apiuser.canvas_api_key
         # Allow for testing against test and production with hard coded credentials during the test cycle
-        # TODO: MAKE SURE THESE ARE REMOVED BEFORE CHECKING INTO HARVARD GIT (IF A PUBLIC REPOSITORY)
+        # TODO: now : MAKE SURE THESE ARE REMOVED BEFORE CHECKING INTO HARVARD GIT (IF A PUBLIC REPOSITORY)
         if settings.DEBUG:
             if CanvasAPI.is_test():
                 user_token = '1875~iZCoAtRqWworZTwz0GdrvLgSFdv01j6so5oa7Uuxt8JRi2y7aq3x7ydyFzvQpXMM'

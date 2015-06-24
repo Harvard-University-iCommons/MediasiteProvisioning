@@ -37,17 +37,16 @@ class MediasiteAPI:
             parent_folder_id = MediasiteAPI.get_root_folder_id()
         url = 'Folders?$filter=ParentFolderId eq \'{0}\' and Name eq \'{1}\''.format(parent_folder_id, name)
         json = MediasiteAPI.get_mediasite_request(url)
-        # TODO: the json returned is in the oData format, and there do not appear to be any
+        # TODO: low : the json returned is in the oData format, and there do not appear to be any
         # python libraries that parse oData.  we can extract the 'value' property of the list to get at the
         # underlying json, but this is not a generally good approach
-        if json['odata.count'] == '1':
-            serializer = FolderSerializer(data=json['value'], many=True)
-            if serializer.is_valid():
-                folders = [Folder(**attrs) for attrs in serializer.validated_data]
-                if len(folders) == 1:
-                    return folders[0]
-            else:
-                errors = serializer.errors
+        serializer = FolderSerializer(data=json['value'], many=True)
+        if serializer.is_valid():
+            folders = [Folder(**attrs) for attrs in serializer.validated_data]
+            if len(folders) == 1:
+                return folders[0]
+        else:
+            errors = serializer.errors
 
     @staticmethod
     def create_folder(name, parent_folder_id):
@@ -62,9 +61,6 @@ class MediasiteAPI:
         else:
             errors = serializer.errors
 
-    # TODO: the default value of the optional ParentFolderId parameter is hard coded to a value
-    # known to be the root folder id of the harvard sandbox.  This is not suitable for production
-    # and a means to find the root folder id will need to be part of the code solution
     @staticmethod
     def get_or_create_folder(name, parent_folder_id):
         if parent_folder_id is None:
@@ -88,13 +84,12 @@ class MediasiteAPI:
     def get_catalog(catalog_name, course_folder_id):
         url = 'Catalogs?$filter=Name eq \'{0}\''.format(catalog_name)
         json = MediasiteAPI.get_mediasite_request(url)
-        # TODO: the json returned is in the oData format, and there do not appear to be any
+        # TODO: low : the json returned is in the oData format, and there do not appear to be any
         # python libraries that parse oData.  we can extract the 'value' property of the list to get at the
         # underlying json, but this is not a generally good approach
         if float(json['odata.count']) > 0:
             serializer = CatalogSerializer(data=json['value'], many=True)
             if serializer.is_valid():
-                # TODO: this may work, but could be cleaned up
                 catalogs = [Catalog(**attrs) for attrs in serializer.validated_data]
                 return next((c for c in catalogs if c.LinkedFolderId == course_folder_id), None)
             else:
@@ -121,7 +116,7 @@ class MediasiteAPI:
     def get_resource_permissions(folder_id):
         url = 'ResourcePermissions(\'{0}\')'.format(folder_id)
         json = MediasiteAPI.get_mediasite_request(url)
-        # TODO: the json returned is in the oData format, and there do not appear to be any
+        # TODO: low : the json returned is in the oData format, and there do not appear to be any
         # python libraries that parse oData.  we can extract the 'value' property of the list to get at the
         # underlying json, but this is not a generally good approach
         serializer = ResourcePermissionSerializer(data=json)
@@ -198,7 +193,7 @@ class MediasiteAPI:
     def get_role_by_directory_entry(directory_entry):
         url = 'Roles?$filter=DirectoryEntry eq \'{0}\''.format(directory_entry)
         json = MediasiteAPI.get_mediasite_request(url)
-        # TODO: the json returned is in the oData format, and there do not appear to be any
+        # TODO: low : the json returned is in the oData format, and there do not appear to be any
         # python libraries that parse oData.  we can extract the 'value' property of the list to get at the
         # underlying json, but this is not a generally good approach
         serializer = RoleSerializer(data=json['value'], many=True)
@@ -223,12 +218,11 @@ class MediasiteAPI:
     def get_user_by_email_address(email_address):
         url =  'UserProfiles?$filter=endswith(Email, \'{0}\')'.format(email_address)
         json = MediasiteAPI.get_mediasite_request(url)
-        # TODO: the json returned is in the oData format, and there do not appear to be any
+        # TODO: low : the json returned is in the oData format, and there do not appear to be any
         # python libraries that parse oData.  we can extract the 'value' property of the list to get at the
         # underlying json, but this is not a generally good approach
         serializer = UserProfileSerializer(data=json['value'], many=True)
         if serializer.is_valid():
-            # TODO: this may work, but could be cleaned up
             user_profiles = [UserProfile(**attrs) for attrs in serializer.validated_data]
             if len(user_profiles) == 1:
                 return user_profiles[0]

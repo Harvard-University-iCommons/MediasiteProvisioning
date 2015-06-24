@@ -23,7 +23,6 @@ class ModuleSerializer(serializers.ModelSerializer):
     class Meta:
         model = Module
 
-# TODO: filter the enrollments so that we only return Teachers and not students
 class EnrollmentSerializer(serializers.ModelSerializer):
     user = UserSerializer(allow_null=True, default=None)
 
