@@ -19,14 +19,14 @@ def search(request):
     terms = list()
     years = list()
     if request.method == 'POST':
-        form = IndexForm(request.POST)
+        form = IndexForm(request.POST, user=request.user)
         if form.is_valid():
             account_id = request.POST['accounts']
             search_term = request.POST['search']
 
-            results.search_results = CanvasAPI.search_courses(
-                account_id=account_id,
-                search_term=search_term)
+            canvas_api = CanvasAPI(user=request.user)
+
+            results.search_results = canvas_api.search_courses(account_id=account_id, search_term=search_term)
             if len(results.search_results) > 0:
                 results.school = School.objects.get(canvas_id=account_id)
 
@@ -57,9 +57,9 @@ def search(request):
                 results.count = 0
 
     else:
-        form = IndexForm()
+        form = IndexForm(request.GET, user=request.user)
 
-    return render(request, 'web/index.html', {'form' : form, 'results' : results})
+    return render(request, 'web/index.html', {'form': form, 'results': results})
 
 @login_required()
 def provision(request):
@@ -69,15 +69,17 @@ def provision(request):
     course_id = request.POST['course_id']
     account_id = request.POST['account_id']
 
+    canvas_api = CanvasAPI(user=request.user)
+
     # We get the mediasite app from the course.  If there is no app there is no point in proceeding
-    external_tool = CanvasAPI.get_mediasite_app_external_tool(account_id)
+    external_tool = canvas_api.get_mediasite_app_external_tool(account_id)
     if external_tool is not None:
         oath_consumer_key = external_tool.consumer_key
 
         # get the course from Canvas.
         # TODO: This may not be necessary since we could pass in all the course attributes, but this is more reliable
         # and extensible
-        course = CanvasAPI.get_course(course_id)
+        course = canvas_api.get_course(course_id)
 
         # course long name
         course_long_name = "({0}) {1} {2} ({3})".format(term, course.course_code, course.name, course.sis_course_id)
@@ -121,7 +123,7 @@ def provision(request):
                     folder_permissions, authenticated_user_role, MediasiteAPI.NO_ACCESS_PERMISSION_FLAG)
 
             # get the teaching users for the course from Canvas
-            canvas_teachers = CanvasAPI.get_enrollments(course_id=course_id, include_user_email=True)
+            canvas_teachers = canvas_api.get_enrollments(course_id=course_id, include_user_email=True)
 
             # iterate through the teachers for this course, find or create their users in Mediasite and
             # add read write permissions to the in memory permission set
@@ -145,14 +147,11 @@ def provision(request):
             MediasiteAPI.assign_permissions_to_folder(course_folder.Id, folder_permissions)
 
             # reach back into Canvas and create a module and module items if they do not exist
-            canvas_mediasite_module_item = CanvasAPI.get_or_create_mediasite_module_item(
+            canvas_mediasite_module_item = canvas_api.get_or_create_mediasite_module_item(
                 course.id,
                 course_catalog.CatalogUrl,
                 external_tool.id)
 
-            canvas_external_url_link = CanvasAPI.get_or_create_external_url(
-                canvas_mediasite_module_item.html_url
-            )
 
 
 
