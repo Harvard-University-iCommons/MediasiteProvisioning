@@ -31,15 +31,15 @@ def search(request):
                     # find and add years
                     # TODO: calendar years do not necessarily make sense for this application.  Should be be
                     # looking at academic years, and if so, what are the cutoff dates?
-                    year = None
+                    course.year = None
                     if course.start_at is not None:
-                        year = CanvasAPI.get_year_from_start_date(course.start_at)
-                        if year not in years:
-                            years.append(year)
+                        course.year = CanvasAPI.get_year_from_start_date(course.start_at)
+                        if course.year not in years:
+                            years.append(course.year)
 
                     # find and add terms
                     if course.term is None:
-                        course.term = Term(name='Full Year {0}'.format(year), start_at=course.start_at)
+                        course.term = Term(name='Full Year {0}'.format(course.year), start_at=course.start_at)
                     if course.term not in terms:
                         terms.append(course.term)
 
@@ -59,8 +59,7 @@ def search(request):
 @login_required()
 def provision(request):
     mediasite_root_folder = request.POST['root_folder']
-    # TODO: pull the actual year
-    year = '2014-2015'
+    year = request.POST['year']
     term = request.POST['term']
     course_id = request.POST['course_id']
 
@@ -111,8 +110,9 @@ def provision(request):
             # so that the course folder is secured
             canvas_user_role_de = 'canvas@{0}'.format(external_tool.consumer_key)
             authenticated_user_role = MediasiteAPI.get_role_by_directory_entry(canvas_user_role_de)
-            folder_permissions = MediasiteAPI.update_folder_permissions(
-                folder_permissions, authenticated_user_role, MediasiteAPI.NO_ACCESS_PERMISSION_FLAG)
+            if authenticated_user_role:
+                folder_permissions = MediasiteAPI.update_folder_permissions(
+                    folder_permissions, authenticated_user_role, MediasiteAPI.NO_ACCESS_PERMISSION_FLAG)
 
             # get the teaching users for the course from Canvas
             canvas_teachers = CanvasAPI.get_enrollments(course_id=course_id, include_user_email=True)

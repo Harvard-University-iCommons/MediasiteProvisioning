@@ -64,6 +64,7 @@ class Course(BaseSerializedModel):
     modules = models.ManyToManyField(Module, null=True, blank=True)
     teaching_users = list()
     term = None
+    year = None
     canvas_mediasite_module_item = None
 
 class ExternalTool(BaseSerializedModel):

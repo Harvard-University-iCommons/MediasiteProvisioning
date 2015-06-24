@@ -49,19 +49,27 @@
     <div class="left_nav">
         <!-- Left nav/facets -->
         {% if results.terms %}
-            {%  for term in results.terms %}
-                <div>
-                    {{ term.name }}
-                </div>
-            {% endfor %}
+            <div>
+                Terms
+                {%  for term in results.terms %}
+                    <div>
+                        {{ term.name }}
+                    </div>
+                {% endfor %}
+                <br/>
+            </div>
         {%  endif %}
 
         {% if results.years %}
-            {% for year in results.years %}
-                <div>
-                    {{ year }}
-                </div>
-            {% endfor %}
+            <div>
+                Years
+                {% for year in results.years %}
+                    <div>
+                        {{ year }}
+                    </div>
+                {% endfor %}
+                <br/>
+            </div>
         {% endif %}
     </div>
 
@@ -98,7 +106,8 @@
                                 Provision Mediasite?
                                 <button onclick="ProvisionMediasite('{{ results.school.mediasite_root_folder }}',
                                         '{{ course.term.name }}',
-                                        '{{ course.id }}')">Provision</button>
+                                        '{{ course.id }}',
+                                        '{{ course.year }}')">Provision</button>
                             {% else %}
                                 Mediasite cannot be provisioned because the course does not have a term.
                             {% endif %}
@@ -115,7 +124,7 @@
     </div>
 
 <script type="application/javascript">
-    function ProvisionMediasite(mediasiteRootFolder, courseTerm, courseId){
+    function ProvisionMediasite(mediasiteRootFolder, courseTerm, courseId, year){
         $.ajax({
             type: 'POST',
             url: '{% url 'web:provision' %}',
@@ -124,7 +133,8 @@
                 csrfmiddlewaretoken: '{{ csrf_token }}',
                 root_folder: mediasiteRootFolder,
                 term: courseTerm,
-                course_id: courseId
+                course_id: courseId,
+                year: year
             },
             success: function(json) {
                 alert("success");

@@ -305,4 +305,4 @@ class CanvasAPI:
 
     @staticmethod
     def is_test():
-        return True
+        return False
