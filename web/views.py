@@ -23,24 +23,29 @@ def search(request):
         if form.is_valid():
             account_id = request.POST['accounts']
             search_term = request.POST['search']
-            results.search_results = CanvasAPI.search_courses(account_id=account_id, search_term=search_term)
+
+            results.search_results = CanvasAPI.search_courses(
+                account_id=account_id,
+                search_term=search_term)
             if len(results.search_results) > 0:
                 results.school = School.objects.get(canvas_id=account_id)
+
                 # using counters and enumerations to be able to change the result set by reference
                 for n, course in enumerate(results.search_results):
                     # find and add years
-                    # TODO: calendar years do not necessarily make sense for this application.  Should be be
-                    # looking at academic years, and if so, what are the cutoff dates?
                     course.year = None
-                    if course.start_at is not None:
+                    if course.term is not None:
+                        course.year = CanvasAPI.get_year_from_term(course.term)
+                    if course.year is None and course.start_at is not None:
                         course.year = CanvasAPI.get_year_from_start_date(course.start_at)
-                        if course.year not in years:
-                            years.append(course.year)
+
+                    if course.year not in years:
+                        years.append(course.year)
 
                     # find and add terms
                     if course.term is None:
                         course.term = Term(name='Full Year {0}'.format(course.year), start_at=course.start_at)
-                    if course.term not in terms:
+                    if next((t for t in terms if t.name == course.term.name), None) is None:
                         terms.append(course.term)
 
                     # set the value of the search results to the modified value
@@ -62,9 +67,10 @@ def provision(request):
     year = request.POST['year']
     term = request.POST['term']
     course_id = request.POST['course_id']
+    account_id = request.POST['account_id']
 
     # We get the mediasite app from the course.  If there is no app there is no point in proceeding
-    external_tool = CanvasAPI.get_mediasite_app_external_tool(course_id)
+    external_tool = CanvasAPI.get_mediasite_app_external_tool(account_id)
     if external_tool is not None:
         oath_consumer_key = external_tool.consumer_key
 
@@ -90,8 +96,8 @@ def provision(request):
 
         if course_folder is not None:
             # create course catalog
-
-            course_catalog = MediasiteAPI.get_or_create_catalog(catalog_name=course_long_name,
+            course_catalog = MediasiteAPI.get_or_create_catalog(friendly_name=catalog_display_name,
+                                                                catalog_name=course_long_name,
                                                                 course_folder_id=course_folder.Id)
 
             ###################################
@@ -143,6 +149,10 @@ def provision(request):
                 course.id,
                 course_catalog.CatalogUrl,
                 external_tool.id)
+
+            canvas_external_url_link = CanvasAPI.get_or_create_external_url(
+                canvas_mediasite_module_item.html_url
+            )
 
 
 

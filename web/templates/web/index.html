@@ -107,7 +107,8 @@
                                 <button onclick="ProvisionMediasite('{{ results.school.mediasite_root_folder }}',
                                         '{{ course.term.name }}',
                                         '{{ course.id }}',
-                                        '{{ course.year }}')">Provision</button>
+                                        '{{ course.year }}',
+                                        '{{ results.school.canvas_id }}')">Provision</button>
                             {% else %}
                                 Mediasite cannot be provisioned because the course does not have a term.
                             {% endif %}
@@ -124,7 +125,7 @@
     </div>
 
 <script type="application/javascript">
-    function ProvisionMediasite(mediasiteRootFolder, courseTerm, courseId, year){
+    function ProvisionMediasite(mediasiteRootFolder, courseTerm, courseId, year, account_id){
         $.ajax({
             type: 'POST',
             url: '{% url 'web:provision' %}',
@@ -134,7 +135,8 @@
                 root_folder: mediasiteRootFolder,
                 term: courseTerm,
                 course_id: courseId,
-                year: year
+                year: year,
+                account_id: account_id
             },
             success: function(json) {
                 alert("success");

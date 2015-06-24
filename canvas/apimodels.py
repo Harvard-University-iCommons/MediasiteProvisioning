@@ -20,6 +20,7 @@ class Term(BaseSerializedModel):
     name = models.TextField()
     start_at = models.DateTimeField(blank=True, null=True)
     end_at = models.DateTimeField(blank=True, null=True)
+    sis_term_id = models.TextField(blank=True, null=True)
 
 class Enrollment(BaseSerializedModel):
     type = models.TextField()
@@ -42,6 +43,7 @@ class ModuleItem(BaseSerializedModel):
     module_id = models.TextField()
     title = models.TextField()
     external_url = models.TextField()
+    html_url = models.TextField()
     type = models.TextField()
     content_id = models.IntegerField()
 
@@ -66,6 +68,13 @@ class Course(BaseSerializedModel):
     term = None
     year = None
     canvas_mediasite_module_item = None
+
+    def __init__(self, **kwargs):
+        # Course has a hierarchy which needs to be manually initialized
+        self.__dict__.update(kwargs)
+        term = kwargs['term']
+        if term:
+            self.term = Term(**term)
 
 class ExternalTool(BaseSerializedModel):
     name = models.TextField()

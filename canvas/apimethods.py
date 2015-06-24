@@ -16,9 +16,11 @@ class CanvasAppType(enum.Enum):
     ExternalTool = 'ExternalTool'
 
 class CanvasAPI:
-    MEDIASITE_EXTERNAL_TOOL_NAME = 'Mediasite'
-    MEDIASITE_MODULE_NAME = 'Mediasite'
+    # MEDIASITE_EXTERNAL_TOOL_NAME = 'Mediasite'
+    MEDIASITE_EXTERNAL_TOOL_NAME = 'DVS Mediasite Lecture Video'
+    MEDIASITE_MODULE_NAME = 'Course Lecture Video'
     MEDIASITE_MODULE_ITEM_NAME = 'Course Lecture Video'
+    MEDIASITE_LINK_NAME = 'Lecture Video'
 
     ##########################################################
     # Accounts
@@ -32,6 +34,20 @@ class CanvasAPI:
             return [Account(**attrs) for attrs in serializer.validated_data]
         else:
             errors = serializer.errors
+
+    @staticmethod
+    def get_mediasite_app_external_tool(account_id):
+        json = CanvasAPI.get_canvas_request(partial_url='accounts/{0}/external_tools'.format(account_id))
+        serializer = ExternalToolSerializer(data=json, many=True)
+        if serializer.is_valid():
+            external_tools = [ExternalTool(**attrs) for attrs in serializer.validated_data]
+            return next((i for i in external_tools
+                         if i.name == CanvasAPI.MEDIASITE_EXTERNAL_TOOL_NAME
+                         and i.type == CanvasAppType.ExternalTool.value), None)
+        else:
+            errors = serializer.errors
+
+
 
     ##########################################################
     # Courses
@@ -48,7 +64,8 @@ class CanvasAPI:
     @staticmethod
     def search_courses(account_id, search_term):
         json = CanvasAPI.get_canvas_request(
-            partial_url='accounts/{0}/courses?search_term={1}&include=term'.format(account_id, search_term))
+            partial_url='accounts/{0}/courses?search_term={1}&include=term&published=true&completed=false'
+                .format(account_id, search_term))
         serializer = CourseSerializer(data=json, many=True)
         validated = serializer.is_valid()
         if validated:
@@ -63,7 +80,7 @@ class CanvasAPI:
                     course.teaching_users = CanvasAPI.get_teaching_users_for_course(course.id)
 
                 # get the Mediasite module
-                course.canvas_mediasite_module_item = CanvasAPI.get_mediasite_module_item(course.id)
+                course.canvas_mediasite_module_item = CanvasAPI.get_mediasite_module_item_by_course(course.id)
                 # TODO:validate that the Canvas Mediasite module points to a real catalog?
 
                 # set the value of the search results to the modified value
@@ -85,15 +102,15 @@ class CanvasAPI:
         else:
             errors = serializer.errors
 
-    @staticmethod
-    def get_mediasite_app_external_tool(course_id):
-        json = CanvasAPI.get_canvas_request(partial_url='courses/{0}/external_tools'.format(course_id))
-        serializer = ExternalToolSerializer(data=json, many=True)
-        if serializer.is_valid():
-            external_tools = [ExternalTool(**attrs) for attrs in serializer.validated_data]
-            return next((i for i in external_tools if i.name == CanvasAPI.MEDIASITE_EXTERNAL_TOOL_NAME), None)
-        else:
-            errors = serializer.errors
+    # @staticmethod
+    # def get_mediasite_app_external_tool(course_id):
+    #     json = CanvasAPI.get_canvas_request(partial_url='courses/{0}/external_tools'.format(course_id))
+    #     serializer = ExternalToolSerializer(data=json, many=True)
+    #     if serializer.is_valid():
+    #         external_tools = [ExternalTool(**attrs) for attrs in serializer.validated_data]
+    #         return next((i for i in external_tools if i.name == CanvasAPI.MEDIASITE_EXTERNAL_TOOL_NAME), None)
+    #     else:
+    #         errors = serializer.errors
 
     ##########################################################
     # Modules
@@ -122,15 +139,15 @@ class CanvasAPI:
             errors = serializer.errors
 
     @staticmethod
-    def get_module(course_id, module_name):
+    def get_module_by_name(course_id, module_name):
+        # TODO: what if there are two modules of the same name?
         return next((i for i in CanvasAPI.get_modules(course_id) if i.name == module_name), None)
 
     @staticmethod
     def get_or_create_module(course_id, module_name):
-        module = CanvasAPI.get_module(course_id, module_name)
+        module = CanvasAPI.get_module_by_name(course_id, module_name)
         if module is None:
             module = CanvasAPI.create_module(course_id, module_name)
-        # TODO: make sure there is only one module of this name
         return module
 
     ##########################################################
@@ -149,9 +166,21 @@ class CanvasAPI:
             errors = serializer.errors
 
     @staticmethod
-    def get_module_item(course_id, module_id, title, app_type):
+    def get_module_item_by_title_and_type(course_id, module_id, title, app_type):
         module_items = CanvasAPI.get_module_items(course_id, module_id)
         return next((i for i in module_items if i.title == title and i.type == app_type), None)
+
+    @staticmethod
+    def get_module_item(course_id, module_id, module_item_id):
+        json = CanvasAPI.get_canvas_request(
+            partial_url='courses/{0}/modules/{1}/items/{2}'.format(course_id, module_id, module_item_id)
+        )
+        serializer = ModuleItemSerializer(data=json)
+        validated = serializer.is_valid()
+        if validated:
+            return ModuleItem(**serializer.validated_data)
+        else:
+            errors = serializer.errors
 
     @staticmethod
     def create_module_item(course_id, module_item):
@@ -165,21 +194,22 @@ class CanvasAPI:
             errors = serializer.errors
 
     @staticmethod
-    def get_mediasite_module_item(course_id):
-        mediasite_module = CanvasAPI.get_module(course_id, module_name=CanvasAPI.MEDIASITE_MODULE_NAME)
+    def get_mediasite_module_item_by_course(course_id):
+        mediasite_module = CanvasAPI.get_module_by_name(course_id, module_name=CanvasAPI.MEDIASITE_MODULE_NAME)
         if mediasite_module is not None and mediasite_module.items_count > 0:
-            return CanvasAPI.get_module_item(course_id, mediasite_module.id,
-                                             title=CanvasAPI.MEDIASITE_MODULE_ITEM_NAME,
-                                             app_type=CanvasAppType.ExternalTool.value)
+            return CanvasAPI.get_module_item_by_title_and_type(course_id, mediasite_module.id,
+                                                               title=CanvasAPI.MEDIASITE_MODULE_ITEM_NAME,
+                                                               app_type=CanvasAppType.ExternalTool.value)
 
     @staticmethod
     def get_or_create_mediasite_module_item(course_id, external_url, external_tool_id):
         mediasite_module_item = None
-        mediasite_module = CanvasAPI.get_module(course_id, module_name=CanvasAPI.MEDIASITE_MODULE_NAME)
+        mediasite_module = CanvasAPI.get_module_by_name(course_id, module_name=CanvasAPI.MEDIASITE_MODULE_NAME)
         if mediasite_module is not None:
-            mediasite_module_item = CanvasAPI.get_module_item(course_id, mediasite_module.id,
-                                                              title=CanvasAPI.MEDIASITE_MODULE_ITEM_NAME,
-                                                              app_type=CanvasAppType.ExternalTool.value)
+            mediasite_module_item = \
+                CanvasAPI.get_module_item_by_title_and_type(course_id, mediasite_module.id,
+                                                            title=CanvasAPI.MEDIASITE_MODULE_ITEM_NAME,
+                                                            app_type=CanvasAppType.ExternalTool.value)
         else:
             mediasite_module = CanvasAPI.create_module(course_id, CanvasAPI.MEDIASITE_MODULE_NAME)
 
@@ -192,6 +222,7 @@ class CanvasAPI:
                                                external_url=external_url,
                                                content_id = external_tool_id)
             mediasite_module_item = CanvasAPI.create_module_item(course_id, mediasite_module_item)
+
         return mediasite_module_item
 
     ##########################################################
@@ -254,6 +285,13 @@ class CanvasAPI:
     # Helper methods
     ##########################################################
     @staticmethod
+    def get_year_from_term(term):
+        year = None
+        if term.sis_term_id:
+            start_year = int(float(term.sis_term_id[:4]))
+            return '{0}-{1}'.format(start_year, start_year + 1)
+
+    @staticmethod
     def get_year_from_start_date(year_start_at):
         # if the course starts in July or later
         if year_start_at.month >= 7:
@@ -305,4 +343,4 @@ class CanvasAPI:
 
     @staticmethod
     def is_test():
-        return False
+        return True

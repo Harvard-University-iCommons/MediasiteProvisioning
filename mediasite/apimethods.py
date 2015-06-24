@@ -78,10 +78,10 @@ class MediasiteAPI:
     # Catalogs
     ######################################################
     @staticmethod
-    def get_or_create_catalog(catalog_name, course_folder_id):
+    def get_or_create_catalog(friendly_name, catalog_name, course_folder_id):
         catalog = MediasiteAPI.get_catalog(catalog_name, course_folder_id)
         if catalog is None:
-            catalog = MediasiteAPI.create_catalog(catalog_name, course_folder_id)
+            catalog = MediasiteAPI.create_catalog(friendly_name, catalog_name, course_folder_id)
         return catalog
 
     @staticmethod
@@ -101,8 +101,9 @@ class MediasiteAPI:
                 errors = serializer.errors
 
     @staticmethod
-    def create_catalog(catalog_name, course_folder_id):
+    def create_catalog(friendly_name, catalog_name, course_folder_id):
         catalog_to_create = dict(
+            FriendlyName=friendly_name,
             Name = catalog_name,
             LinkedFolderId = course_folder_id
         )
