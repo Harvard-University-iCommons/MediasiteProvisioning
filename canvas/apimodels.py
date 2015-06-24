@@ -71,3 +71,4 @@ class ExternalTool(BaseSerializedModel):
     description = models.TextField(blank=True, null=True)
     url = models.TextField(blank=True, null=True)
     domain = models.TextField(blank=True, null=True)
+    consumer_key = models.TextField(blank=True, null=True)

@@ -59,10 +59,12 @@ class CanvasAPI:
                     course.enrollments = CanvasAPI.get_enrollments(course_id=course.id, update_user_email=False)
 
                 # get the teaching users
-                course.teaching_users = CanvasAPI.get_teaching_users_for_course(course.id)
+                if False:
+                    course.teaching_users = CanvasAPI.get_teaching_users_for_course(course.id)
 
                 # get the Mediasite module
                 course.canvas_mediasite_module_item = CanvasAPI.get_mediasite_module_item(course.id)
+                # TODO:validate that the Canvas Mediasite module points to a real catalog?
 
                 # set the value of the search results to the modified value
                 search_results[n] = course
@@ -149,7 +151,7 @@ class CanvasAPI:
     @staticmethod
     def get_module_item(course_id, module_id, title, app_type):
         module_items = CanvasAPI.get_module_items(course_id, module_id)
-        return next((i for i in module_items if i.title == title and i.type == type), None)
+        return next((i for i in module_items if i.title == title and i.type == app_type), None)
 
     @staticmethod
     def create_module_item(course_id, module_item):
@@ -171,7 +173,7 @@ class CanvasAPI:
                                              app_type=CanvasAppType.ExternalTool.value)
 
     @staticmethod
-    def get_or_create_mediasite_module_item(course_id, external_url):
+    def get_or_create_mediasite_module_item(course_id, external_url, external_tool_id):
         mediasite_module_item = None
         mediasite_module = CanvasAPI.get_module(course_id, module_name=CanvasAPI.MEDIASITE_MODULE_NAME)
         if mediasite_module is not None:
@@ -184,13 +186,11 @@ class CanvasAPI:
         # we only create the mediasite module item, we don't update it
         # TODO: look into whether we should update it
         if mediasite_module_item is None:
-            external_tool = CanvasAPI.get_mediasite_app_external_tool(course_id)
-            if external_tool is not None:
-                mediasite_module_item = ModuleItem(module_id=mediasite_module.id,
-                                                   title=CanvasAPI.MEDIASITE_MODULE_ITEM_NAME,
-                                                   type=CanvasAppType.ExternalTool.value,
-                                                   external_url=external_url,
-                                                   content_id = external_tool.id)
+            mediasite_module_item = ModuleItem(module_id=mediasite_module.id,
+                                               title=CanvasAPI.MEDIASITE_MODULE_ITEM_NAME,
+                                               type=CanvasAppType.ExternalTool.value,
+                                               external_url=external_url,
+                                               content_id = external_tool_id)
             mediasite_module_item = CanvasAPI.create_module_item(course_id, mediasite_module_item)
         return mediasite_module_item
 
@@ -251,6 +251,18 @@ class CanvasAPI:
             errors = serializer.errors
 
     ##########################################################
+    # Helper methods
+    ##########################################################
+    @staticmethod
+    def get_year_from_start_date(year_start_at):
+        # if the course starts in July or later
+        if year_start_at.month >= 7:
+            return '{0}-{1}'.format(year_start_at.year, year_start_at.year + 1)
+        else:
+            return '{0}-{1}'.format(year_start_at.year-1, year_start_at.year)
+        endif
+
+    ##########################################################
     # API methods
     ##########################################################
     @staticmethod
@@ -269,7 +281,9 @@ class CanvasAPI:
     @staticmethod
     def get_canvas_url(partial_url):
         # TODO: make canvas URL a configuration parameter
-        if CanvasAPI.is_production():
+        if CanvasAPI.is_test():
+            return 'https://harvard.test.instructure.com/api/v1/{0}'.format(partial_url)
+        elif CanvasAPI.is_production():
             return 'https://canvas.harvard.edu/api/v1/{0}'.format(partial_url)
         else:
             return 'https://canvas-sandbox.tlt.harvard.edu/api/v1/{0}'.format(partial_url)
@@ -279,10 +293,16 @@ class CanvasAPI:
         # TODO: pull user_token from secure store
         # default to sandbox user_token
         user_token = 'OPMm7g8AAISwhGh0cS8Vn6pnKmsJBwFSHzsnAMCRAf4btYzmJtXUShjnGFDsUCET'
-        if CanvasAPI.is_production():
+        if CanvasAPI.is_test():
+            user_token = '1875~iZCoAtRqWworZTwz0GdrvLgSFdv01j6so5oa7Uuxt8JRi2y7aq3x7ydyFzvQpXMM'
+        elif CanvasAPI.is_production():
             user_token = '1875~Op1MVZaDnZn8nAHB4eJsRda2YkYHdJKIHxNe0mry09Xnug9gS5qZVGkXUCNn1bD2'
         return {'Authorization': 'Bearer ' + user_token, 'Content-Type': 'application/json'}
 
     @staticmethod
     def is_production():
         return False
+
+    @staticmethod
+    def is_test():
+        return True

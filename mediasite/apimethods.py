@@ -14,6 +14,8 @@ class MediasiteAPI:
     READ_WRITE_PERMISSION_FLAG = 7
     NO_ACCESS_PERMISSION_FLAG = 0
 
+    DEFAULT_TERM_NAME = 'Default Term'
+
     ######################################################
     # Folders
     ######################################################
@@ -160,14 +162,14 @@ class MediasiteAPI:
             )
         return folder_permissions
 
-
     ######################################################
     # Roles
     ######################################################
     @staticmethod
-    def create_role(role_name):
+    def create_role(role_name, directory_entry):
         role_to_create = dict(
-            Name = role_name
+            Name = role_name,
+            DirectoryEntry = directory_entry
         )
         json = MediasiteAPI.post_mediasite_request('Roles', body=role_to_create)
         serializer = RoleSerializer(data=json)
@@ -176,9 +178,24 @@ class MediasiteAPI:
         else:
             errors = serializer.errors
 
+    # @staticmethod
+    # def get_role_by_name(role_name):
+    #     url = 'Roles?$filter=Name eq \'{0}\''.format(role_name)
+    #     json = MediasiteAPI.get_mediasite_request(url)
+    #     # TODO: the json returned is in the oData format, and there do not appear to be any
+    #     # python libraries that parse oData.  we can extract the 'value' property of the list to get at the
+    #     # underlying json, but this is not a generally good approach
+    #     serializer = RoleSerializer(data=json['value'], many=True)
+    #     if serializer.is_valid():
+    #         roles = [Role(**attrs) for attrs in serializer.validated_data]
+    #         if len(roles) == 1:
+    #             return roles[0]
+    #     else:
+    #         errors = serializer.errors
+
     @staticmethod
-    def get_role(role_name):
-        url = 'Roles?$filter=Name eq \'{0}\''.format(role_name)
+    def get_role_by_directory_entry(directory_entry):
+        url = 'Roles?$filter=DirectoryEntry eq \'{0}\''.format(directory_entry)
         json = MediasiteAPI.get_mediasite_request(url)
         # TODO: the json returned is in the oData format, and there do not appear to be any
         # python libraries that parse oData.  we can extract the 'value' property of the list to get at the
@@ -192,10 +209,10 @@ class MediasiteAPI:
             errors = serializer.errors
 
     @staticmethod
-    def get_or_create_role(role_name):
-        role = MediasiteAPI.get_role(role_name)
+    def get_or_create_role(role_name, directory_entry):
+        role = MediasiteAPI.get_role_by_directory_entry(directory_entry)
         if role is None:
-            role = MediasiteAPI.create_role(role_name)
+            role = MediasiteAPI.create_role(role_name, directory_entry)
         return role
 
     ######################################################

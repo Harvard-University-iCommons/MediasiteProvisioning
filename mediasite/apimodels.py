@@ -50,6 +50,7 @@ class ResourcePermission(BaseSerializedModel):
 class Role(BaseSerializedModel):
     Name = models.TextField()
     Description = models.TextField(null=True, blank=True)
+    DirectoryEntry = models.TextField(null=True, blank=True)
 
 class UserProfile(BaseSerializedModel):
     UserName = models.TextField()
