@@ -98,8 +98,8 @@
 
                         </div>
                     <div>
-                        {% if course.canvas_mediasite_module_item %}
-                            <a href="{{ course.canvas_mediasite_module_item.external_url }}">Mediasite Catalog</a>
+                        {% if course.canvas_mediasite_external_link %}
+                            <a href="{{ course.canvas_mediasite_external_link.url }}">Mediasite Catalog</a>
                         {% else %}
                             Mediasite is not provisioned.
                             {%  if course.term %}

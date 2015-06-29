@@ -39,17 +39,6 @@ class CanvasAPI:
         else:
             errors = serializer.errors
 
-    def get_mediasite_app_external_tool(self, account_id):
-        json = self.get_canvas_request(partial_url='accounts/{0}/external_tools'.format(account_id))
-        serializer = ExternalToolSerializer(data=json, many=True)
-        if serializer.is_valid():
-            external_tools = [ExternalTool(**attrs) for attrs in serializer.validated_data]
-            return next((i for i in external_tools
-                         if i.name == CanvasAPI.MEDIASITE_EXTERNAL_TOOL_NAME
-                         and i.type == CanvasAppType.ExternalTool.value), None)
-        else:
-            errors = serializer.errors
-
     ##########################################################
     # Courses
     ##########################################################
@@ -70,9 +59,8 @@ class CanvasAPI:
         if validated:
             search_results = [Course(**attrs) for attrs in serializer.validated_data]
             for n, course in enumerate(search_results):
-                # get the Mediasite module
-                course.canvas_mediasite_module_item = self.get_mediasite_module_item_by_course(course.id)
-                # TODO: next phase: validate that the Canvas Mediasite module points to a real catalog?
+                #get the Mediasite external link
+                course.canvas_mediasite_external_link = self.get_mediasite_app_external_link(course_id=course.id)
 
                 # set the value of the search results to the modified value
                 search_results[n] = course
@@ -92,15 +80,40 @@ class CanvasAPI:
         else:
             errors = serializer.errors
 
-    # @staticmethod
-    # def get_mediasite_app_external_tool(course_id):
-    #     json = CanvasAPI.get_canvas_request(partial_url='courses/{0}/external_tools'.format(course_id))
-    #     serializer = ExternalToolSerializer(data=json, many=True)
-    #     if serializer.is_valid():
-    #         external_tools = [ExternalTool(**attrs) for attrs in serializer.validated_data]
-    #         return next((i for i in external_tools if i.name == CanvasAPI.MEDIASITE_EXTERNAL_TOOL_NAME), None)
-    #     else:
-    #         errors = serializer.errors
+    ##########################################################
+    # External tools
+    ##########################################################
+    def get_mediasite_app_external_link(self, course_id):
+        json = self.get_canvas_request(partial_url='courses/{0}/external_tools'.format(course_id))
+        serializer = ExternalToolSerializer(data=json, many=True)
+        if serializer.is_valid():
+            external_tools = [ExternalTool(**attrs) for attrs in serializer.validated_data]
+            return next((i for i in external_tools if i.name == CanvasAPI.MEDIASITE_LINK_NAME), None)
+        else:
+            errors = serializer.errors
+
+    def create_mediasite_app_external_link(self, course_id, consumer_key, shared_secret, url):
+        external_link = dict (
+            consumer_key=consumer_key,
+            shared_secret=shared_secret,
+            url=url,
+            name=CanvasAPI.MEDIASITE_LINK_NAME,
+            privacy_level='public',
+            course_navigation=dict (
+                enabled=True,
+                url=url,
+                visibility='members',
+                label=CanvasAPI.MEDIASITE_LINK_NAME
+            )
+        )
+        data = {'external_tool': external_link}
+        json = self.post_canvas_request(partial_url='courses/{0}/external_tools'.format(course_id), data=data)
+        serializer = ExternalToolSerializer(data=json)
+        if serializer.is_valid():
+            return ExternalTool(**serializer.validated_data)
+        else:
+            errors = serializer.errors
+
 
     ##########################################################
     # Modules

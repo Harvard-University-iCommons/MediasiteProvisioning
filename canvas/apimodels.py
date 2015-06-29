@@ -68,6 +68,7 @@ class Course(BaseSerializedModel):
     term = None
     year = None
     canvas_mediasite_module_item = None
+    canvas_mediasite_external_link = None
 
     def __init__(self, **kwargs):
         # Course has a hierarchy which needs to be manually initialized

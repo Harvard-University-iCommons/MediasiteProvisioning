@@ -69,12 +69,20 @@ def provision(request):
     course_id = request.POST['course_id']
     account_id = request.POST['account_id']
 
-    canvas_api = CanvasAPI(user=request.user)
+    account = School.objects.get(canvas_id=account_id)
+    oath_consumer_key = None
+    shared_secret = None
+    if account.consumer_key is not None and account.shared_secret is not None:
+        oath_consumer_key = account.consumer_key
+        shared_secret = account.shared_secret
+    else:
+        oath_consumer_key = settings.OAUTH_CONSUMER_KEY
+        shared_secret = settings.OAUTH_SHARED_SECRET
 
-    # We get the mediasite app from the course.  If there is no app there is no point in proceeding
-    external_tool = canvas_api.get_mediasite_app_external_tool(account_id)
-    if external_tool is not None:
-        oath_consumer_key = external_tool.consumer_key
+    if oath_consumer_key is not None and shared_secret is not None:
+        # Initialize an instance of the CanvasAPI with a user, to allow the use of credentials
+        # for communication with Canvas
+        canvas_api=CanvasAPI(user=request.user)
 
         # get the course from Canvas.
         course = canvas_api.get_course(course_id)
@@ -114,7 +122,7 @@ def provision(request):
 
             # remove permissions for general canvas users users from the in memory permission set
             # so that the course folder is secured
-            canvas_user_role_de = 'canvas@{0}'.format(external_tool.consumer_key)
+            canvas_user_role_de = 'canvas@{0}'.format(oath_consumer_key)
             authenticated_user_role = MediasiteAPI.get_role_by_directory_entry(canvas_user_role_de)
             if authenticated_user_role:
                 folder_permissions = MediasiteAPI.update_folder_permissions(
@@ -145,14 +153,8 @@ def provision(request):
             MediasiteAPI.assign_permissions_to_folder(course_folder.Id, folder_permissions)
 
             # reach back into Canvas and create a module and module items if they do not exist
-            canvas_mediasite_module_item = canvas_api.get_or_create_mediasite_module_item(
-                course.id,
-                course_catalog.CatalogUrl,
-                external_tool.id)
-
-
-
-
-
-
-
+            canvas_mediasite_module_item = canvas_api.create_mediasite_app_external_link(
+                course_id=course.id,
+                url=course_catalog.CatalogUrl,
+                consumer_key=oath_consumer_key,
+                shared_secret=shared_secret)
