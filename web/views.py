@@ -128,26 +128,27 @@ def provision(request):
                 folder_permissions = MediasiteAPI.update_folder_permissions(
                     folder_permissions, authenticated_user_role, MediasiteAPI.NO_ACCESS_PERMISSION_FLAG)
 
-            # get the teaching users for the course from Canvas
-            canvas_teachers = canvas_api.get_enrollments(course_id=course_id, include_user_email=True)
-
             # iterate through the teachers for this course, find or create their users in Mediasite and
             # add read write permissions to the in memory permission set
-            for canvas_teacher in canvas_teachers:
-                teacher_user = MediasiteAPI.get_user_by_email_address(canvas_teacher.user.primary_email)
-                if teacher_user is None:
-                    # TODO: very low : look into creating an appropriate TimeZone for the user
-                    teacher_user = MediasiteAPI.create_user(
-                        UserProfile(UserName=canvas_teacher.user.primary_email,
-                                    DisplayName=canvas_teacher.user.name,
-                                    Email=canvas_teacher.user.primary_email,
-                                    Activated=True)
-                    )
+            if settings.CREATE_USER_PROFILES_FOR_TEACHERS:
+                # get the teaching users for the course from Canvas
+                canvas_teachers = canvas_api.get_enrollments(course_id=course_id, include_user_email=True)
 
-                teacher_role = Role(Id = MediasiteAPI.convert_user_profile_to_role_id(teacher_user.Id))
+                for canvas_teacher in canvas_teachers:
+                    teacher_user = MediasiteAPI.get_user_by_email_address(canvas_teacher.user.primary_email)
+                    if teacher_user is None:
+                        # TODO: very low : look into creating an appropriate TimeZone for the user
+                        teacher_user = MediasiteAPI.create_user(
+                            UserProfile(UserName=canvas_teacher.user.primary_email,
+                                        DisplayName=canvas_teacher.user.name,
+                                        Email=canvas_teacher.user.primary_email,
+                                        Activated=True)
+                        )
 
-                folder_permissions = MediasiteAPI.update_folder_permissions(
-                    folder_permissions, teacher_role,  MediasiteAPI.READ_WRITE_PERMISSION_FLAG)
+                    teacher_role = Role(Id = MediasiteAPI.convert_user_profile_to_role_id(teacher_user.Id))
+
+                    folder_permissions = MediasiteAPI.update_folder_permissions(
+                        folder_permissions, teacher_role,  MediasiteAPI.READ_WRITE_PERMISSION_FLAG)
 
             # assign in memory  permissions to folder in Mediasite
             MediasiteAPI.assign_permissions_to_folder(course_folder.Id, folder_permissions)

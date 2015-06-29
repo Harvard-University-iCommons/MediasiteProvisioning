@@ -304,32 +304,12 @@ class CanvasAPI:
 
     @staticmethod
     def get_canvas_url(partial_url):
-        # TODO: now : make canvas URL a configuration parameter
-        if CanvasAPI.is_test():
-            return 'https://harvard.test.instructure.com/api/v1/{0}'.format(partial_url)
-        elif CanvasAPI.is_production():
-            return 'https://canvas.harvard.edu/api/v1/{0}'.format(partial_url)
-        else:
-            return 'https://canvas-sandbox.tlt.harvard.edu/api/v1/{0}'.format(partial_url)
+        return settings.CANVAS_URL.format(partial_url)
 
     def get_canvas_headers(self):
         assert(self._user is not None, 'You cannot use the Canvas API without initializing an instance of the class '
                                        'with a user object')
         # TODO: now: decrypt encrypted token
+        # TODO: what if the user does not have an API key, or an invalid key?
         user_token = self._user.apiuser.canvas_api_key
-        # Allow for testing against test and production with hard coded credentials during the test cycle
-        # TODO: now : MAKE SURE THESE ARE REMOVED BEFORE CHECKING INTO HARVARD GIT (IF A PUBLIC REPOSITORY)
-        if settings.DEBUG:
-            if CanvasAPI.is_test():
-                user_token = '1875~iZCoAtRqWworZTwz0GdrvLgSFdv01j6so5oa7Uuxt8JRi2y7aq3x7ydyFzvQpXMM'
-            elif CanvasAPI.is_production():
-                user_token = '1875~Op1MVZaDnZn8nAHB4eJsRda2YkYHdJKIHxNe0mry09Xnug9gS5qZVGkXUCNn1bD2'
         return {'Authorization': 'Bearer ' + user_token, 'Content-Type': 'application/json'}
-
-    @staticmethod
-    def is_production():
-        return False
-
-    @staticmethod
-    def is_test():
-        return False

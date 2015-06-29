@@ -15,19 +15,20 @@ class IndexForm(forms.Form):
         account_choices = list()
         canvas_api = CanvasAPI(user=self.user)
         accounts = canvas_api.get_accounts_for_current_user()
-        for account in accounts:
-            account_choice = ((account.id, account.name))
-            account_choices.append(account_choice)
-            # we also save/update account information
-            # TODO: we may want to look at this for performance
-            school = School(canvas_id = account.id, name = account.name)
-            try:
-                school = School.objects.get(canvas_id = account.id)
-                school.name = account.name
-            except ObjectDoesNotExist:
-                # do nothing since we initialized school above
-                pass
-            school.save()
+        if accounts:
+            for account in accounts:
+                account_choice = ((account.id, account.name))
+                account_choices.append(account_choice)
+                # we also save/update account information
+                # TODO: we may want to look at this for performance
+                school = School(canvas_id = account.id, name = account.name)
+                try:
+                    school = School.objects.get(canvas_id = account.id)
+                    school.name = account.name
+                except ObjectDoesNotExist:
+                    # do nothing since we initialized school above
+                    pass
+                school.save()
 
         self.fields['accounts'] = forms.ChoiceField(choices=account_choices, required=True)
 

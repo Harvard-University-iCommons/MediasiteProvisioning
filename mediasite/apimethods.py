@@ -1,6 +1,7 @@
 import requests
 import json
 import uuid
+from django.conf import settings
 from requests.auth import HTTPBasicAuth
 
 from .serializer import FolderSerializer, FolderPermissionSerializer, HomeSerializer, CatalogSerializer
@@ -251,15 +252,33 @@ class MediasiteAPI:
         return MediasiteAPI.mediasite_request(url=url, method='POST', body=body)
 
     def mediasite_request(url, method, body):
-        url = 'https://dvsdev.mediasite.video.harvard.edu/mediasite/api/v1/' + url
-        #url = 'https://sandbox.mediasite.video.harvard.edu/mediasite/api/v1/' + url
-        auth = HTTPBasicAuth('Nick_Carmello', 'daft-jaggy-beauty')
-        api_key = '4746f072-7faa-4b91-8fdf-3b3aca910c26'
-        #api_key = 'e368e3bb-4a6a-48a7-af17-a868300c6d63'
-
-        headers = {'sfapikey': api_key, 'Content-Type': 'application/json'}
         if method == 'POST':
-            r = requests.post(url=url, auth=auth, headers=headers, data=json.dumps(body), verify=False)
+            r = requests.post(url=MediasiteAPI.get_mediasite_url(url),
+                              auth=MediasiteAPI.get_mediasite_auth(),
+                              headers=MediasiteAPI.get_mediasite_headers(),
+                              data=json.dumps(body),
+                              verify=MediasiteAPI.is_production())
         else:
-            r = requests.get(url=url, auth=auth, headers=headers, verify=False)
+            r = requests.get(url=MediasiteAPI.get_mediasite_url(url),
+                             auth=MediasiteAPI.get_mediasite_auth(),
+                             headers=MediasiteAPI.get_mediasite_headers(),
+                             verify=MediasiteAPI.is_production())
         return r.json()
+
+    @staticmethod
+    def get_mediasite_auth():
+        auth = HTTPBasicAuth(settings.MEDIASITE_USERNAME, settings.MEDIASITE_PASSWORD)
+
+    @staticmethod
+    def get_mediasite_headers():
+        api_key = settings.MEDIASITE_API_KEY
+        return {'sfapikey': api_key, 'Content-Type': 'application/json'}
+
+    @staticmethod
+    def get_mediasite_url(partial_url):
+        return settings.MEDIASITE_URL.format(partial_url)
+
+    @staticmethod
+    def is_production():
+        return not settings.DEBUG
+
