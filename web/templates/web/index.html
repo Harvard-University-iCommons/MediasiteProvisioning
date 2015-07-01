@@ -35,13 +35,14 @@
         </div>
     </div>
     <div class="search_bar">
-        <!-- Search bar -->
-        <form action="{% url 'web:index' %}" method="post" >{%  csrf_token %}
-            <div>{{ form.accounts }}</div>
-            <div>{{ form.search }}</div>
-            <input type="submit" value="Search">
-        </form>
-
+        {% if form %}
+            <!-- Search bar -->
+            <form action="{% url 'web:index' %}" method="post" >{%  csrf_token %}
+                <div>{{ form.accounts }}</div>
+                <div>{{ form.search }}</div>
+                <input type="submit" value="Search">
+            </form>
+        {%  endif %}
     </div>
 </div>
 <div>
@@ -74,8 +75,11 @@
     </div>
 
         <div class="results">
+        <!-- Errors -->
+        {% if error %}
+            {{ error }}
         <!-- Results -->
-        {% if results %}
+        {% elif results %}
             {% if results.count == 0 %}
                 There are no courses that match your search terms
             {% else %}
@@ -97,23 +101,23 @@
                             {% endif %}
 
                         </div>
-                    <div>
-                        {% if course.canvas_mediasite_external_link %}
-                            <a href="{{ course.canvas_mediasite_external_link.url }}">Mediasite Catalog</a>
-                        {% else %}
-                            Mediasite is not provisioned.
-                            {%  if course.term %}
-                                Provision Mediasite?
-                                <button onclick="ProvisionMediasite('{{ results.school.mediasite_root_folder }}',
-                                        '{{ course.term.name }}',
-                                        '{{ course.id }}',
-                                        '{{ course.year }}',
-                                        '{{ results.school.canvas_id }}')">Provision</button>
+                        <div>
+                            {% if course.canvas_mediasite_external_link %}
+                                <a href="{{ course.canvas_mediasite_external_link.url }}">Mediasite Catalog</a>
                             {% else %}
-                                Mediasite cannot be provisioned because the course does not have a term.
+                                Mediasite is not provisioned.
+                                {%  if course.term %}
+                                    Provision Mediasite?
+                                    <button onclick="ProvisionMediasite('{{ results.school.mediasite_root_folder }}',
+                                            '{{ course.term.name }}',
+                                            '{{ course.id }}',
+                                            '{{ course.year }}',
+                                            '{{ results.school.canvas_id }}')">Provision</button>
+                                {% else %}
+                                    Mediasite cannot be provisioned because the course does not have a term.
+                                {% endif %}
                             {% endif %}
-                        {% endif %}
-                    </div>
+                        </div>
                     </div>
                     <br />
                 {% endfor %}
@@ -138,8 +142,11 @@
                 year: year,
                 account_id: account_id
             },
-            success: function(json) {
-                alert("success");
+            success: function(message) {
+                alert(message);
+            },
+            error: function(message) {
+                alert(message);
             }
         })
     };

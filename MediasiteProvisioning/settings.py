@@ -110,6 +110,9 @@ DATABASES = {
     }
 }
 
+# Determines whether we provision user profiles in Mediasite. Currently false pending IAM discussion
+CREATE_USER_PROFILES_FOR_TEACHERS = False
+
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = 'cdkbbnxtmcqcs*%0h(hj*0lla+(+&f-2+mao+ga6=c=10eut++'
 
@@ -126,33 +129,23 @@ MEDIASITE_PASSWORD = 'daft-jaggy-beauty'
 #############################################################
 # Dev
 #############################################################
-MEDIASITE_API_KEY = '4746f072-7faa-4b91-8fdf-3b3aca910c26'
-MEDIASITE_URL = 'https://dvsdev.mediasite.video.harvard.edu/mediasite/api/v1/{0}'
-CANVAS_URL = 'https://canvas-sandbox.tlt.harvard.edu/api/v1/{0}'
+# MEDIASITE_API_KEY = '4746f072-7faa-4b91-8fdf-3b3aca910c26'
+# MEDIASITE_URL = 'https://dvsdev.mediasite.video.harvard.edu/mediasite/api/v1/{0}'
+# CANVAS_URL = 'https://canvas-sandbox.tlt.harvard.edu/api/v1/{0}'
 
 #############################################################
 # Test
 #############################################################
-# MEDIASITE_API_KEY = 'e368e3bb-4a6a-48a7-af17-a868300c6d63'
-# MEDIASITE_URL = 'https://sandbox.mediasite.video.harvard.edu/mediasite/api/v1/{0}'
-# CANVAS_URL = 'https://harvard.test.instructure.com/api/v1/{0}'
+MEDIASITE_API_KEY = 'e368e3bb-4a6a-48a7-af17-a868300c6d63'
+MEDIASITE_URL = 'https://sandbox.mediasite.video.harvard.edu/mediasite/api/v1/{0}'
+CANVAS_URL = 'https://harvard.test.instructure.com/api/v1/{0}'
 
 #############################################################
 # Prod
 #############################################################
-# MEDIASITE_API_KEY = ''
-# MEDIASITE_URL = ''
+# MEDIASITE_API_KEY = 'e368e3bb-4a6a-48a7-af17-a868300c6d63'
+# MEDIASITE_URL = 'https://sandbox.mediasite.video.harvard.edu/mediasite/api/v1/{0}'
 # CANVAS_URL = 'https://canvas.harvard.edu/api/v1/{0}'
 
 
-
-
-
-
-
-
-
-
-
-CREATE_USER_PROFILES_FOR_TEACHERS = False
 

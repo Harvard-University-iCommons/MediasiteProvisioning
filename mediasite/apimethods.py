@@ -28,7 +28,7 @@ class MediasiteAPI:
             url = 'Home'
             json =  MediasiteAPI.get_mediasite_request(url)
             serializer = HomeSerializer(data=json)
-            if serializer.is_valid():
+            if serializer.is_valid(raise_exception=True):
                 MediasiteAPI._root_folder_id = Home(**serializer.validated_data).RootFolderId
         return MediasiteAPI._root_folder_id
 
@@ -42,7 +42,7 @@ class MediasiteAPI:
         # python libraries that parse oData.  we can extract the 'value' property of the list to get at the
         # underlying json, but this is not a generally good approach
         serializer = FolderSerializer(data=json['value'], many=True)
-        if serializer.is_valid():
+        if serializer.is_valid(raise_exception=True):
             folders = [Folder(**attrs) for attrs in serializer.validated_data]
             if len(folders) == 1:
                 return folders[0]
@@ -57,7 +57,7 @@ class MediasiteAPI:
         )
         json = MediasiteAPI.post_mediasite_request('Folders', body=folder_to_create)
         serializer = FolderSerializer(data=json)
-        if serializer.is_valid():
+        if serializer.is_valid(raise_exception=True):
             return Folder(**serializer.validated_data)
         else:
             errors = serializer.errors
@@ -66,9 +66,10 @@ class MediasiteAPI:
     def get_or_create_folder(name, parent_folder_id):
         if parent_folder_id is None:
             parent_folder_id = MediasiteAPI.get_root_folder_id()
-        folder = MediasiteAPI.get_folder(name, parent_folder_id)
-        if not folder:
-            folder = MediasiteAPI.create_folder(name, parent_folder_id)
+        if parent_folder_id is not None:
+            folder = MediasiteAPI.get_folder(name, parent_folder_id)
+            if not folder:
+                folder = MediasiteAPI.create_folder(name, parent_folder_id)
         return folder
 
     ######################################################
@@ -90,7 +91,7 @@ class MediasiteAPI:
         # underlying json, but this is not a generally good approach
         if float(json['odata.count']) > 0:
             serializer = CatalogSerializer(data=json['value'], many=True)
-            if serializer.is_valid():
+            if serializer.is_valid(raise_exception=True):
                 catalogs = [Catalog(**attrs) for attrs in serializer.validated_data]
                 return next((c for c in catalogs if c.LinkedFolderId == course_folder_id), None)
             else:
@@ -105,7 +106,7 @@ class MediasiteAPI:
         )
         json = MediasiteAPI.post_mediasite_request('Catalogs', catalog_to_create)
         serializer = CatalogSerializer(data=json)
-        if serializer.is_valid():
+        if serializer.is_valid(raise_exception=True):
             return Catalog(**serializer.validated_data)
         else:
             errors = serializer.errors
@@ -121,7 +122,7 @@ class MediasiteAPI:
         # python libraries that parse oData.  we can extract the 'value' property of the list to get at the
         # underlying json, but this is not a generally good approach
         serializer = ResourcePermissionSerializer(data=json)
-        if serializer.is_valid():
+        if serializer.is_valid(raise_exception=True):
             return ResourcePermission(**serializer.validated_data)
         else:
             errors = serializer.errors
@@ -170,7 +171,7 @@ class MediasiteAPI:
         )
         json = MediasiteAPI.post_mediasite_request('Roles', body=role_to_create)
         serializer = RoleSerializer(data=json)
-        if serializer.is_valid():
+        if serializer.is_valid(raise_exception=True):
             return Role(**serializer.validated_data)
         else:
             errors = serializer.errors
@@ -183,7 +184,7 @@ class MediasiteAPI:
     #     # python libraries that parse oData.  we can extract the 'value' property of the list to get at the
     #     # underlying json, but this is not a generally good approach
     #     serializer = RoleSerializer(data=json['value'], many=True)
-    #     if serializer.is_valid():
+    #     if serializer.is_valid(raise_exception=True):
     #         roles = [Role(**attrs) for attrs in serializer.validated_data]
     #         if len(roles) == 1:
     #             return roles[0]
@@ -198,7 +199,7 @@ class MediasiteAPI:
         # python libraries that parse oData.  we can extract the 'value' property of the list to get at the
         # underlying json, but this is not a generally good approach
         serializer = RoleSerializer(data=json['value'], many=True)
-        if serializer.is_valid():
+        if serializer.is_valid(raise_exception=True):
             roles = [Role(**attrs) for attrs in serializer.validated_data]
             if len(roles) == 1:
                 return roles[0]
@@ -223,7 +224,7 @@ class MediasiteAPI:
         # python libraries that parse oData.  we can extract the 'value' property of the list to get at the
         # underlying json, but this is not a generally good approach
         serializer = UserProfileSerializer(data=json['value'], many=True)
-        if serializer.is_valid():
+        if serializer.is_valid(raise_exception=True):
             user_profiles = [UserProfile(**attrs) for attrs in serializer.validated_data]
             if len(user_profiles) == 1:
                 return user_profiles[0]
@@ -235,7 +236,7 @@ class MediasiteAPI:
         url = 'UserProfiles'
         json = MediasiteAPI.post_mediasite_request(url=url, body=user.__dict__)
         serializer = UserProfileSerializer(data=json)
-        if serializer.is_valid():
+        if serializer.is_valid(raise_exception=True):
             return UserProfile(**serializer.validated_data)
 
     @staticmethod
@@ -267,7 +268,7 @@ class MediasiteAPI:
 
     @staticmethod
     def get_mediasite_auth():
-        auth = HTTPBasicAuth(settings.MEDIASITE_USERNAME, settings.MEDIASITE_PASSWORD)
+        return HTTPBasicAuth(settings.MEDIASITE_USERNAME, settings.MEDIASITE_PASSWORD)
 
     @staticmethod
     def get_mediasite_headers():
@@ -280,5 +281,5 @@ class MediasiteAPI:
 
     @staticmethod
     def is_production():
-        return not settings.DEBUG
+        return False
 

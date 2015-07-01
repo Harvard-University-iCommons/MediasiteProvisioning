@@ -1,10 +1,18 @@
 import requests
 import enum
 import json
+import sys
 from django.conf import settings
+from rest_framework.exceptions import APIException
 from .serializer import AccountSerializer, CourseSerializer, EnrollmentSerializer, UserSerializer, ModuleSerializer
 from .serializer import ModuleItemSerializer, ExternalToolSerializer
 from .apimodels import Course, Module, ModuleItem, Account, User, Enrollment, ExternalTool
+
+class CanvasServiceException(Exception):
+    def __init__(self, message):
+        message = 'Error communicating with Canvas.  Please note this error and contact support.  Error : [{0}]'\
+            .format(message)
+        super(CanvasServiceException, self).__init__(message)
 
 class CanvasAppType(enum.Enum):
     File = 'File',
@@ -31,32 +39,26 @@ class CanvasAPI:
     # Accounts
     ##########################################################
     def get_accounts_for_current_user(self):
-        json = self.get_canvas_request(partial_url='accounts')
-        serializer = AccountSerializer(data=json, many=True)
-        validated = serializer.is_valid()
-        if validated:
+        response = self.get_canvas_request(partial_url='accounts')
+        serializer = AccountSerializer(data=response.json(), many=True)
+        if serializer.is_valid(raise_exception=True):
             return [Account(**attrs) for attrs in serializer.validated_data]
-        else:
-            errors = serializer.errors
 
     ##########################################################
     # Courses
     ##########################################################
     def get_courses_for_account(self, account_id):
-        json = self.get_canvas_request(partial_url='accounts/{0}/courses?include=term'.format(account_id))
-        serializer = CourseSerializer(data=json, many=True)
-        if serializer.is_valid():
+        response = self.get_canvas_request(partial_url='accounts/{0}/courses?include=term'.format(account_id))
+        serializer = CourseSerializer(data=response.json(), many=True)
+        if serializer.is_valid(raise_exception=True):
             return [Course(**attrs) for attrs in serializer.validated_data]
-        else:
-            errors = serializer.errors
 
     def search_courses(self, account_id, search_term):
-        json = self.get_canvas_request(
+        response = self.get_canvas_request(
             partial_url='accounts/{0}/courses?search_term={1}&include=term&published=true&completed=false'
                 .format(account_id, search_term))
-        serializer = CourseSerializer(data=json, many=True)
-        validated = serializer.is_valid()
-        if validated:
+        serializer = CourseSerializer(data=response.json(), many=True)
+        if serializer.is_valid(raise_exception=True):
             search_results = [Course(**attrs) for attrs in serializer.validated_data]
             for n, course in enumerate(search_results):
                 #get the Mediasite external link
@@ -64,33 +66,25 @@ class CanvasAPI:
 
                 # set the value of the search results to the modified value
                 search_results[n] = course
-
             return search_results
-        else:
-            errors = serializer.errors
 
     def get_course(self, course_id):
-        json = self.get_canvas_request(
+        response = self.get_canvas_request(
             partial_url='courses/{0}'.format(course_id)
         )
-        serializer = CourseSerializer(data=json)
-        validated = serializer.is_valid()
-        if validated:
+        serializer = CourseSerializer(data=response.json())
+        if serializer.is_valid(raise_exception=True):
             return Course(**serializer.validated_data)
-        else:
-            errors = serializer.errors
 
     ##########################################################
     # External tools
     ##########################################################
     def get_mediasite_app_external_link(self, course_id):
-        json = self.get_canvas_request(partial_url='courses/{0}/external_tools'.format(course_id))
-        serializer = ExternalToolSerializer(data=json, many=True)
-        if serializer.is_valid():
+        response = self.get_canvas_request(partial_url='courses/{0}/external_tools'.format(course_id))
+        serializer = ExternalToolSerializer(data=response.json(), many=True)
+        if serializer.is_valid(raise_exception=True):
             external_tools = [ExternalTool(**attrs) for attrs in serializer.validated_data]
             return next((i for i in external_tools if i.name == CanvasAPI.MEDIASITE_LINK_NAME), None)
-        else:
-            errors = serializer.errors
 
     def create_mediasite_app_external_link(self, course_id, consumer_key, shared_secret, url):
         external_link = dict (
@@ -107,37 +101,29 @@ class CanvasAPI:
             )
         )
         data = {'external_tool': external_link}
-        json = self.post_canvas_request(partial_url='courses/{0}/external_tools'.format(course_id), data=data)
-        serializer = ExternalToolSerializer(data=json)
-        if serializer.is_valid():
+        response = self.post_canvas_request(partial_url='courses/{0}/external_tools'.format(course_id), data=data)
+        serializer = ExternalToolSerializer(data=response.json())
+        if serializer.is_valid(raise_exception=True):
             return ExternalTool(**serializer.validated_data)
-        else:
-            errors = serializer.errors
-
 
     ##########################################################
     # Modules
     ##########################################################
     def get_modules(self, course_id):
-        json = self.get_canvas_request(
+        response = self.get_canvas_request(
             partial_url='courses/{0}/modules'.format(course_id)
         )
-        serializer = ModuleSerializer(data=json, many=True)
-        validated = serializer.is_valid()
-        if validated:
+        serializer = ModuleSerializer(data=response.json(), many=True)
+        if serializer.is_valid(raise_exception=True):
             return [Module(**attrs) for attrs in serializer.validated_data]
-        else:
-            errors = serializer.errors
 
     def create_module(self, course_id, module_name):
         module = Module(name = module_name)
         data = {'module': module.__dict__ }
-        json = self.post_canvas_request(partial_url='courses/{0}/modules'.format(course_id), data = data)
-        serializer = ModuleSerializer(data=json)
-        if serializer.is_valid():
+        response = self.post_canvas_request(partial_url='courses/{0}/modules'.format(course_id), data = data)
+        serializer = ModuleSerializer(data=response.json())
+        if serializer.is_valid(raise_exception=True):
             return Module(**serializer.validated_data)
-        else:
-            errors = serializer.errors
 
     def get_module_by_name(self, course_id, module_name):
         # TODO: what if there are two modules of the same name?
@@ -153,40 +139,32 @@ class CanvasAPI:
     # Module items
     ##########################################################
     def get_module_items(self, course_id, module_id):
-        json = self.get_canvas_request(
+        response = self.get_canvas_request(
             partial_url='courses/{0}/modules/{1}/items'.format(course_id, module_id)
         )
-        serializer = ModuleItemSerializer(data=json, many=True)
-        validated = serializer.is_valid()
-        if validated:
+        serializer = ModuleItemSerializer(data=response.json(), many=True)
+        if serializer.is_valid(raise_exception=True):
             return [ModuleItem(**attrs) for attrs in serializer.validated_data]
-        else:
-            errors = serializer.errors
 
     def get_module_item_by_title_and_type(self, course_id, module_id, title, app_type):
         module_items = self.get_module_items(course_id, module_id)
         return next((i for i in module_items if i.title == title and i.type == app_type), None)
 
     def get_module_item(self, course_id, module_id, module_item_id):
-        json = self.get_canvas_request(
+        response = self.get_canvas_request(
             partial_url='courses/{0}/modules/{1}/items/{2}'.format(course_id, module_id, module_item_id)
         )
-        serializer = ModuleItemSerializer(data=json)
-        validated = serializer.is_valid()
-        if validated:
+        serializer = ModuleItemSerializer(data=response.json())
+        if serializer.is_valid(raise_exception=True):
             return ModuleItem(**serializer.validated_data)
-        else:
-            errors = serializer.errors
 
     def create_module_item(self, course_id, module_item):
         data = { 'module_item' : module_item.__dict__ }
-        json = self.post_canvas_request(partial_url='courses/{0}/modules/{1}/items'
+        response = self.post_canvas_request(partial_url='courses/{0}/modules/{1}/items'
                                         .format(course_id, module_item.module_id), data = data)
-        serializer = ModuleItemSerializer(data=json)
-        if serializer.is_valid():
+        serializer = ModuleItemSerializer(data=response.json())
+        if serializer.is_valid(raise_exception=True):
             return ModuleItem(**serializer.validated_data)
-        else:
-            errors = serializer.errors
 
     def get_mediasite_module_item_by_course(self, course_id):
         mediasite_module = self.get_module_by_name(course_id, module_name=CanvasAPI.MEDIASITE_MODULE_NAME)
@@ -222,14 +200,11 @@ class CanvasAPI:
     # Users, including enrollments
     ##########################################################
     def get_enrollments_for_teachers_and_tas(self, course_id):
-        json = self.get_canvas_request(partial_url='courses/{0}/enrollments?type[]={1}&type[]={2}'
+        response = self.get_canvas_request(partial_url='courses/{0}/enrollments?type[]={1}&type[]={2}'
                                        .format(course_id, 'TeacherEnrollment', 'TaEnrollment'))
-        serializer = EnrollmentSerializer(data=json, many=True)
-        validated = serializer.is_valid()
-        if validated:
+        serializer = EnrollmentSerializer(data=response.json(), many=True)
+        if serializer.is_valid(raise_exception=True):
             return [Enrollment(**attrs) for attrs in serializer.validated_data]
-        else:
-            errors = serializer.errors
 
     def get_enrollments(self, course_id, include_user_email):
         enrollments = self.get_enrollments_for_teachers_and_tas(course_id=course_id)
@@ -241,33 +216,24 @@ class CanvasAPI:
         return enrollments
 
     def get_user_profile(self, user_id):
-        json = self.get_canvas_request(partial_url='users/{0}/profile'.format(user_id))
-        serializer = UserSerializer(data=json)
-        validated = serializer.is_valid()
-        if validated:
+        response = self.get_canvas_request(partial_url='users/{0}/profile'.format(user_id))
+        serializer = UserSerializer(data=response.json())
+        if serializer.is_valid(raise_exception=True):
             return User(**serializer.validated_data)
-        else:
-            errors = serializer.errors
 
     def get_teaching_users_for_course(self, course_id):
-        json = self.get_canvas_request(partial_url='courses/{0}/users?enrollment_type=teacher&include[]=email'
+        response = self.get_canvas_request(partial_url='courses/{0}/users?enrollment_type=teacher&include[]=email'
                                             .format(course_id))
-        serializer = UserSerializer(data=json, many=True)
-        validated = serializer.is_valid()
-        if validated:
+        serializer = UserSerializer(data=response.json(), many=True)
+        if serializer.is_valid(raise_exception=True):
             return [User(**attr) for attr in serializer.validated_data]
-        else:
-            errors = serializer.errors
 
     def get_ta_users_for_course(self, course_id):
-        json = self.get_canvas_request(partial_url='courses/{0}/users?enrollment_type=ta&include[]=email'
+        response = self.get_canvas_request(partial_url='courses/{0}/users?enrollment_type=ta&include[]=email'
                                        .format(course_id))
-        serializer = UserSerializer(data=json, many=True)
-        validated = serializer.is_valid()
-        if validated:
+        serializer = UserSerializer(data=response.json(), many=True)
+        if serializer.is_valid(raise_exception=True):
             return [User(**attrs) for attrs in serializer.validated_data]
-        else:
-            errors = serializer.errors
 
     ##########################################################
     # Helper methods
@@ -292,23 +258,29 @@ class CanvasAPI:
     # API methods
     ##########################################################
     def get_canvas_request(self, partial_url):
-        r = requests.get(url=CanvasAPI.get_canvas_url(partial_url),
-                         headers= self.get_canvas_headers())
-        return r.json()
+        try:
+            r = requests.get(url=CanvasAPI.get_canvas_url(partial_url),
+                             headers=self.get_canvas_headers())
+            r.raise_for_status()
+            return r
+        except Exception as e:
+            raise CanvasServiceException(e)
 
     def post_canvas_request(self, partial_url, data):
-        r = requests.post(url=CanvasAPI.get_canvas_url(partial_url),
-                          data=json.dumps(data),
-                          headers=self.get_canvas_headers())
-        return r.json()
+        try:
+            r = requests.post(url=CanvasAPI.get_canvas_url(partial_url),
+                              data=json.dumps(data),
+                              headers=self.get_canvas_headers())
+            r.raise_for_status()
+            return r
+        except Exception as e:
+            raise CanvasServiceException().with_traceback(e.__traceback__)
 
     @staticmethod
     def get_canvas_url(partial_url):
         return settings.CANVAS_URL.format(partial_url)
 
     def get_canvas_headers(self):
-        assert(self._user is not None, 'You cannot use the Canvas API without initializing an instance of the class '
-                                       'with a user object')
         # TODO: now: decrypt encrypted token
         # TODO: what if the user does not have an API key, or an invalid key?
         user_token = self._user.apiuser.canvas_api_key
