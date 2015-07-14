@@ -7,7 +7,7 @@ from django.http import HttpResponseServerError, HttpResponse
 import string
 import sys
 from datetime import datetime
-from canvas.apimethods import CanvasAPI
+from canvas.apimethods import CanvasAPI, CanvasServiceException
 from canvas.apimodels import Term
 from mediasite.apimethods import MediasiteAPI
 from mediasite.apimodels import UserProfile, Role
@@ -63,10 +63,15 @@ def search(request):
                     results.count = 0
         else:
             form = IndexForm(request.GET, user=request.user)
+    except CanvasServiceException as ce:
+        # TODO: if we get a 401 it means, probably, that the access token that the user has
+        # is invalid.  we should probably clear it and force them to redirect to Canvas to get
+        # another token
+        error = '{0} [{1}]'.format(ce, ce._canvas_exception)
     except Exception as e:
-        error=e
+        error = e
 
-    return render(request, 'web/index.html', {'form': form, 'results': results, 'error' : error})
+    return render(request, 'web/index.html', {'form': form, 'results': results, 'error': error})
 
 @login_required()
 def provision(request):

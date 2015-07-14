@@ -9,10 +9,12 @@ from .serializer import ModuleItemSerializer, ExternalToolSerializer
 from .apimodels import Course, Module, ModuleItem, Account, User, Enrollment, ExternalTool
 
 class CanvasServiceException(Exception):
-    def __init__(self, message):
-        message = 'Error communicating with Canvas.  Please note this error and contact support.  Error : [{0}]'\
-            .format(message)
+    _canvas_exception = None
+
+    def __init__(self, canvas_exception,
+                 message='Error communicating with Canvas.  Please note this error and contact support.'):
         super(CanvasServiceException, self).__init__(message)
+        self._canvas_exception=canvas_exception
 
 class CanvasAppType(enum.Enum):
     File = 'File',
@@ -264,7 +266,7 @@ class CanvasAPI:
             r.raise_for_status()
             return r
         except Exception as e:
-            raise CanvasServiceException(e)
+            raise CanvasServiceException(canvas_exception=e)
 
     def post_canvas_request(self, partial_url, data):
         try:
@@ -274,7 +276,7 @@ class CanvasAPI:
             r.raise_for_status()
             return r
         except Exception as e:
-            raise CanvasServiceException().with_traceback(e.__traceback__)
+            raise CanvasServiceException(canvas_exception=e)
 
     @staticmethod
     def get_canvas_url(partial_url):

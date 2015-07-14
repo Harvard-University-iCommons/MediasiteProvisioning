@@ -1,39 +1,6 @@
-{% load staticfiles %}
+{% extends "web/base.html" %}
 
-<link rel="stylesheet" type="text/css" href="{% static "web/style.css" %}" />
-{% if settings.DEBUG %}
-    <script src="http://code.jquery.com/jquery-1.11.3.js"></script>
-{% else %}
-    <script src="http://code.jquery.com/jquery-1.11.3.min.js"></script>
-{% endif %}
-
-<div>
-    <!-- Header -->
-    <div class="top_bar">
-        {% if request.user.is_authenticated %}
-            <div class="user">
-                {% if request.user.first_name %}
-                    Welcome {{ request.user.first_name }} {{ request.user.last_name }}
-                {% else %}
-                    Welcome {{ request.user.username }}
-                {% endif %}
-                <a href ='{% url 'logout' %}'>Logout</a>
-            </div>
-        {% endif %}
-        <!-- Top bar -->
-        <a href="http://www.harvard.edu">Harvard.edu</a>
-    </div>
-    <div class="main_header">
-        <!-- Main Header -->
-        <div>
-            <div class="logo"></div>
-            <div></div>
-        </div>
-        <div>
-            <h1>Welcome to DVSP</h1>
-            <p>Provision Mediasite for your classroom</p>
-        </div>
-    </div>
+{% block subheader %}
     <div class="search_bar">
         {% if form %}
             <!-- Search bar -->
@@ -44,8 +11,9 @@
             </form>
         {%  endif %}
     </div>
-</div>
-<div>
+{% endblock %}
+
+{% block content %}
     <!-- Main -->
     <div class="left_nav">
         <!-- Left nav/facets -->
@@ -152,5 +120,5 @@
     };
 </script>
 
-</div>
+{% endblock %}
 
