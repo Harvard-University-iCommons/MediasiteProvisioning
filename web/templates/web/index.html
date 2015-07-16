@@ -4,9 +4,10 @@
     <div class="search_bar">
         {% if form %}
             <!-- Search bar -->
-            <form action="{% url 'web:index' %}" method="post" >{%  csrf_token %}
+            <form id="form" action="{% url 'web:index' %}" method="post" >{%  csrf_token %}
                 <div>{{ form.accounts }}</div>
                 <div>{{ form.search }}</div>
+                <input type="hidden" value="1" name="page" id="page" />
                 <input type="submit" value="Search">
             </form>
         {%  endif %}
@@ -41,8 +42,7 @@
             </div>
         {% endif %}
     </div>
-
-        <div class="results">
+    <div class="results">
         <!-- Errors -->
         {% if error %}
             {{ error }}
@@ -76,7 +76,7 @@
                                 Mediasite is not provisioned.
                                 {%  if course.term %}
                                     Provision Mediasite?
-                                    <button onclick="ProvisionMediasite('{{ results.school.mediasite_root_folder }}',
+                                    <button id="{{ course.id }}" onclick="ProvisionMediasite('{{ results.school.mediasite_root_folder }}',
                                             '{{ course.term.name }}',
                                             '{{ course.id }}',
                                             '{{ course.year }}',
@@ -94,9 +94,28 @@
             Please select a school and enter a course name or number in the search box to find courses to provision to Mediasite
         {% endif %}
 
+        <div class="paging">
+            {% if results.links %}
+                {% for link in results.links %}
+                    <a href="#" onclick="LoadPage('{{ link.page }}'); return false;">{{ link.rel }}</a> &nbsp;
+                {% endfor %}
+
+            {% endif %}
+        </div>
+
     </div>
 
+
+    <div class="modal"></div>
+
 <script type="application/javascript">
+    $body = $("body");
+
+    $(document).on({
+        ajaxStart: function() { $body.addClass("loading");    },
+        ajaxStop: function() { $body.removeClass("loading"); }
+    });
+
     function ProvisionMediasite(mediasiteRootFolder, courseTerm, courseId, year, account_id){
         $.ajax({
             type: 'POST',
@@ -111,14 +130,22 @@
                 account_id: account_id
             },
             success: function(message) {
-                alert(message);
+                window.location.reload(true)
             },
             error: function(message) {
                 alert(message);
             }
         })
     };
+
+    function LoadPage(page) {
+        if (page != 0){
+            $('#page').val(page);
+            $('#form').submit();
+        }
+    }
 </script>
+
 
 {% endblock %}
 

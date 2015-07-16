@@ -1,5 +1,5 @@
 from rest_framework import  serializers
-from .apimodels import Course, Term, Enrollment, User, Account, ModuleItem, Module, ExternalTool
+from .apimodels import Course, Term, Enrollment, User, Account, ModuleItem, Module, ExternalTool, Link
 
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
@@ -41,4 +41,8 @@ class CourseSerializer(serializers.ModelSerializer):
 class ExternalToolSerializer(serializers.ModelSerializer):
     class Meta:
         model = ExternalTool
+
+class LinkSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Link
 

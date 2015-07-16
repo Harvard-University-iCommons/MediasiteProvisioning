@@ -83,3 +83,27 @@ class ExternalTool(BaseSerializedModel):
     url = models.TextField(blank=True, null=True)
     domain = models.TextField(blank=True, null=True)
     consumer_key = models.TextField(blank=True, null=True)
+
+class Link(BaseSerializedModel):
+    url = models.TextField()
+    rel = models.TextField()
+
+    def page(self):
+        page = 0
+        if self.url:
+            page_html = '&page='
+            page_index = self.url.find(page_html)
+            if page_index != -1:
+                page = self.url[page_index + len(page_html):len(self.url) ]
+                page_index = page.find('&')
+                if page_index != -1:
+                    page = page[0:page_index]
+        return page
+
+class SearchResults(models.Model):
+    search_results = list()
+    terms = list()
+    years = list()
+    links = list()
+    count = None
+    school = None

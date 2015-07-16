@@ -3,10 +3,11 @@ import enum
 import json
 import sys
 from django.conf import settings
+from operator import itemgetter, attrgetter, methodcaller
 from rest_framework.exceptions import APIException
 from .serializer import AccountSerializer, CourseSerializer, EnrollmentSerializer, UserSerializer, ModuleSerializer
-from .serializer import ModuleItemSerializer, ExternalToolSerializer
-from .apimodels import Course, Module, ModuleItem, Account, User, Enrollment, ExternalTool
+from .serializer import ModuleItemSerializer, ExternalToolSerializer, LinkSerializer
+from .apimodels import Course, Module, ModuleItem, Account, User, Enrollment, ExternalTool, SearchResults, Term, Link
 
 class CanvasServiceException(Exception):
     _canvas_exception = None
@@ -15,6 +16,11 @@ class CanvasServiceException(Exception):
                  message='Error communicating with Canvas.  Please note this error and contact support.'):
         super(CanvasServiceException, self).__init__(message)
         self._canvas_exception=canvas_exception
+
+    def status_code(self):
+        if self._canvas_exception:
+            if hasattr(self._canvas_exception, 'response'):
+                return self._canvas_exception.response.status_code
 
 class CanvasAppType(enum.Enum):
     File = 'File',
@@ -55,20 +61,60 @@ class CanvasAPI:
         if serializer.is_valid(raise_exception=True):
             return [Course(**attrs) for attrs in serializer.validated_data]
 
-    def search_courses(self, account_id, search_term):
+    def search_courses(self, account_id, search_term, page):
+        results = SearchResults()
+        terms = list()
+        years = list()
         response = self.get_canvas_request(
-            partial_url='accounts/{0}/courses?search_term={1}&include=term&published=true&completed=false'
-                .format(account_id, search_term))
+            partial_url='accounts/{0}/courses?include=term&published=true&completed=false&search_term={1}&page={2}&per_page=10'
+                .format(account_id, search_term, page))
+
+        # get courses
         serializer = CourseSerializer(data=response.json(), many=True)
         if serializer.is_valid(raise_exception=True):
-            search_results = [Course(**attrs) for attrs in serializer.validated_data]
-            for n, course in enumerate(search_results):
-                #get the Mediasite external link
+            results.search_results = [Course(**attrs) for attrs in serializer.validated_data]
+
+            for n, course in enumerate(results.search_results):
+                # get the Mediasite external link
                 course.canvas_mediasite_external_link = self.get_mediasite_app_external_link(course_id=course.id)
 
+                # find and add years
+                course.year = None
+                if course.term is not None:
+                    course.year = CanvasAPI.get_year_from_term(course.term)
+                if course.year is None and course.start_at is not None:
+                    course.year = CanvasAPI.get_year_from_start_date(course.start_at)
+
+                if course.year not in years:
+                    years.append(course.year)
+
+                # find and add terms
+                if course.term is None:
+                    course.term = Term(name='Full Year {0}'.format(course.year), start_at=course.start_at)
+                if next((t for t in terms if t.name == course.term.name), None) is None:
+                    terms.append(course.term)
+
                 # set the value of the search results to the modified value
-                search_results[n] = course
-            return search_results
+                results.search_results[n] = course
+
+            results.terms = terms
+            results.years = years
+
+        # get links, add them if there is a 'next' or 'prev' page (if there is not then there is only one page)
+        # removing the current link
+        serializer = LinkSerializer(data=list(response.links.values()), many=True)
+        if serializer.is_valid(raise_exception=True):
+            links = [Link(**attrs) for attrs in serializer.validated_data]
+            for n, link in enumerate(links):
+                if link.page() == page:
+                    link.url = None
+                links[n] = link
+
+            if next((l for l in links if l.rel == 'next' or l.rel == 'prev'), None) is not None:
+                results.links = sorted(list(l for l in links if l.rel != 'current'), key=attrgetter('rel'))
+
+
+        return results
 
     def get_course(self, course_id):
         response = self.get_canvas_request(
@@ -284,6 +330,5 @@ class CanvasAPI:
 
     def get_canvas_headers(self):
         # TODO: now: decrypt encrypted token
-        # TODO: what if the user does not have an API key, or an invalid key?
         user_token = self._user.apiuser.canvas_api_key
         return {'Authorization': 'Bearer ' + user_token, 'Content-Type': 'application/json'}

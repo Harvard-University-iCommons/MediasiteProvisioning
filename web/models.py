@@ -11,3 +11,9 @@ class School(models.Model):
 class APIUser(models.Model):
     user = models.OneToOneField(User)
     canvas_api_key = models.TextField()
+
+class Log(models.Model):
+    username = models.TextField(blank=True, null=True)
+    created = models.DateTimeField(auto_now=True)
+    error = models.TextField()
+

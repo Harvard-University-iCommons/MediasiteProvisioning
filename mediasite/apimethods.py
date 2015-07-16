@@ -9,6 +9,18 @@ from .serializer import RoleSerializer, ResourcePermissionSerializer, FolderPerm
 from .serializer import UserProfileSerializer
 from .apimodels import Home, Folder, Catalog, Role, ResourcePermission, FolderPermission, AccessControl, UserProfile
 
+class MediasiteServiceException(Exception):
+    _mediasite_exception = None
+
+    def __init__(self, mediasite_exception,
+                 message='Error communicating with Mediasite.  Please note this error and contact support.'):
+        super(MediasiteServiceException, self).__init__(message)
+        self._mediasite_exception=mediasite_exception
+
+    def status_code(self):
+        if self._mediasite_exception:
+            if hasattr(self._mediasite_exception, 'response'):
+                return self._mediasite_exception.response.status_code
 
 class MediasiteAPI:
     READ_ONLY_PERMISSION_FLAG = 5
@@ -246,24 +258,32 @@ class MediasiteAPI:
     ######################################################
     # Generic API Methods
     ######################################################
+    @staticmethod
     def get_mediasite_request(url):
         return MediasiteAPI.mediasite_request(url=url, method='GET', body=None)
 
+    @staticmethod
     def post_mediasite_request(url, body):
         return MediasiteAPI.mediasite_request(url=url, method='POST', body=body)
 
+    @staticmethod
     def mediasite_request(url, method, body):
-        if method == 'POST':
-            r = requests.post(url=MediasiteAPI.get_mediasite_url(url),
-                              auth=MediasiteAPI.get_mediasite_auth(),
-                              headers=MediasiteAPI.get_mediasite_headers(),
-                              data=json.dumps(body),
-                              verify=MediasiteAPI.is_production())
-        else:
-            r = requests.get(url=MediasiteAPI.get_mediasite_url(url),
-                             auth=MediasiteAPI.get_mediasite_auth(),
-                             headers=MediasiteAPI.get_mediasite_headers(),
-                             verify=MediasiteAPI.is_production())
+        try:
+            if method == 'POST':
+                r = requests.post(url=MediasiteAPI.get_mediasite_url(url),
+                                  auth=MediasiteAPI.get_mediasite_auth(),
+                                  headers=MediasiteAPI.get_mediasite_headers(),
+                                  data=json.dumps(body),
+                                  verify=MediasiteAPI.is_production())
+            else:
+                r = requests.get(url=MediasiteAPI.get_mediasite_url(url),
+                                 auth=MediasiteAPI.get_mediasite_auth(),
+                                 headers=MediasiteAPI.get_mediasite_headers(),
+                                 verify=MediasiteAPI.is_production())
+            r.raise_for_status()
+        except Exception as e:
+            raise MediasiteServiceException(mediasite_exception=e)
+
         return r.json()
 
     @staticmethod

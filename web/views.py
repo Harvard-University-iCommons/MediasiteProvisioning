@@ -8,68 +8,47 @@ import string
 import sys
 from datetime import datetime
 from canvas.apimethods import CanvasAPI, CanvasServiceException
-from canvas.apimodels import Term
+from canvas.apimodels import Term, SearchResults
 from mediasite.apimethods import MediasiteAPI
 from mediasite.apimodels import UserProfile, Role
 from .forms import IndexForm
-from .viewmodels import SearchResults
-from .models import School
+from .models import School, Log
 
 
 @login_required()
 def search(request):
+    results = None
     form = None
     error = None
     try:
-        results = SearchResults()
-        terms = list()
-        years = list()
         if request.method == 'POST':
             form = IndexForm(request.POST, user=request.user)
             if form.is_valid():
                 account_id = request.POST['accounts']
                 search_term = request.POST['search']
+                page = request.POST['page']
 
                 canvas_api = CanvasAPI(user=request.user)
 
-                results.search_results = canvas_api.search_courses(account_id=account_id, search_term=search_term)
+                results = canvas_api.search_courses(account_id=account_id, search_term=search_term, page=page)
                 if len(results.search_results) > 0:
                     results.school = School.objects.get(canvas_id=account_id)
-
-                    # using counters and enumerations to be able to change the result set by reference
-                    for n, course in enumerate(results.search_results):
-                        # find and add years
-                        course.year = None
-                        if course.term is not None:
-                            course.year = CanvasAPI.get_year_from_term(course.term)
-                        if course.year is None and course.start_at is not None:
-                            course.year = CanvasAPI.get_year_from_start_date(course.start_at)
-
-                        if course.year not in years:
-                            years.append(course.year)
-
-                        # find and add terms
-                        if course.term is None:
-                            course.term = Term(name='Full Year {0}'.format(course.year), start_at=course.start_at)
-                        if next((t for t in terms if t.name == course.term.name), None) is None:
-                            terms.append(course.term)
-
-                        # set the value of the search results to the modified value
-                        results.search_results[n] = course
-
-                    results.terms = terms
-                    results.years = years
                 else:
                     results.count = 0
         else:
             form = IndexForm(request.GET, user=request.user)
     except CanvasServiceException as ce:
-        # TODO: if we get a 401 it means, probably, that the access token that the user has
-        # is invalid.  we should probably clear it and force them to redirect to Canvas to get
-        # another token
+        canvas_exception = ce._canvas_exception
+        if ce.status_code() == 401:
+            # TODO: if we get a 401 it means, probably, that the access token that the user has
+            # is invalid, or the user does not have a token.  we should redirect them to canvas to get a token
+            redirect('account/logout')
+
         error = '{0} [{1}]'.format(ce, ce._canvas_exception)
+        log(username=request.user.username, error=error)
     except Exception as e:
         error = e
+        log(username=request.user.username, error=error)
 
     return render(request, 'web/index.html', {'form': form, 'results': results, 'error': error})
 
@@ -187,4 +166,9 @@ def provision(request):
                                                    'School/account : {0}'.format(account.name))
     except:
         error=sys.exc_info()
+        log(username=request.user.username, error=error)
         return HttpResponseServerError(content='Unknown error : {0}'.format(error))
+
+def log(username, error):
+    log = Log(username=username, error=error)
+    log.save()
