@@ -133,7 +133,6 @@ def provision(request):
                     for canvas_teacher in canvas_teachers:
                         teacher_user = MediasiteAPI.get_user_by_email_address(canvas_teacher.user.primary_email)
                         if teacher_user is None:
-                            # TODO: very low : look into creating an appropriate TimeZone for the user
                             teacher_user = MediasiteAPI.create_user(
                                 UserProfile(UserName=canvas_teacher.user.primary_email,
                                             DisplayName=canvas_teacher.user.name,

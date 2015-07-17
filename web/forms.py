@@ -20,8 +20,7 @@ class IndexForm(forms.Form):
                 account_choice = ((account.id, account.name))
                 account_choices.append(account_choice)
                 # we also save/update account information
-                # TODO: we may want to look at this for performance
-                school = School(canvas_id = account.id, name = account.name)
+                school = School(canvas_id=account.id, name=account.name)
                 try:
                     school = School.objects.get(canvas_id = account.id)
                     school.name = account.name

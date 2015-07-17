@@ -105,6 +105,7 @@ class CanvasAPI:
         serializer = LinkSerializer(data=list(response.links.values()), many=True)
         if serializer.is_valid(raise_exception=True):
             links = [Link(**attrs) for attrs in serializer.validated_data]
+            # dont allow paging to the current page
             for n, link in enumerate(links):
                 if link.page() == page:
                     link.url = None
@@ -112,7 +113,6 @@ class CanvasAPI:
 
             if next((l for l in links if l.rel == 'next' or l.rel == 'prev'), None) is not None:
                 results.links = sorted(list(l for l in links if l.rel != 'current'), key=attrgetter('rel'))
-
 
         return results
 
@@ -221,6 +221,7 @@ class CanvasAPI:
                                                           title=CanvasAPI.MEDIASITE_MODULE_ITEM_NAME,
                                                           app_type=CanvasAppType.ExternalTool.value)
 
+    # This method is not used at this time, due to a change in scope.
     def get_or_create_mediasite_module_item(self, course_id, external_url, external_tool_id):
         mediasite_module_item = None
         mediasite_module = self.get_module_by_name(course_id, module_name=CanvasAPI.MEDIASITE_MODULE_NAME)
@@ -233,7 +234,6 @@ class CanvasAPI:
             mediasite_module = self.create_module(course_id, CanvasAPI.MEDIASITE_MODULE_NAME)
 
         # we only create the mediasite module item, we don't update it
-        # TODO: next phase : look into whether we should update it
         if mediasite_module_item is None:
             mediasite_module_item = ModuleItem(module_id=mediasite_module.id,
                                                title=CanvasAPI.MEDIASITE_MODULE_ITEM_NAME,
