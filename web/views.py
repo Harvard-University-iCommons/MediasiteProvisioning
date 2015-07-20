@@ -4,6 +4,7 @@ from django.shortcuts import redirect
 from django.conf import settings
 from django.contrib.auth.decorators import login_required
 from django.http import HttpResponseServerError, HttpResponse
+from django.contrib.auth.models import User
 import string
 import sys
 from datetime import datetime
@@ -12,8 +13,7 @@ from canvas.apimodels import Term, SearchResults
 from mediasite.apimethods import MediasiteAPI
 from mediasite.apimodels import UserProfile, Role
 from .forms import IndexForm
-from .models import School, Log
-
+from .models import School, Log, APIUser
 
 @login_required()
 def search(request):
@@ -39,13 +39,15 @@ def search(request):
             form = IndexForm(request.GET, user=request.user)
     except CanvasServiceException as ce:
         canvas_exception = ce._canvas_exception
+        error = '{0} [{1}]'.format(ce, canvas_exception)
+        log(username=request.user.username, error=error)
+
         if ce.status_code() == 401:
             # TODO: if we get a 401 it means, probably, that the access token that the user has
             # is invalid, or the user does not have a token.  we should redirect them to canvas to get a token
-            redirect('account/logout')
+            canvas_redirect_url = CanvasAPI.get_canvas_oauth_redirect_url(client_id=request.user.id)
+            return redirect(canvas_redirect_url)
 
-        error = '{0} [{1}]'.format(ce, ce._canvas_exception)
-        log(username=request.user.username, error=error)
     except Exception as e:
         error = e
         log(username=request.user.username, error=error)
@@ -167,6 +169,22 @@ def provision(request):
         error=sys.exc_info()
         log(username=request.user.username, error=error)
         return HttpResponseServerError(content='Unknown error : {0}'.format(error))
+
+@login_required()
+def oauth(request):
+    code = request.GET['code']
+    state = request.GET['state']
+
+    # make sure that this response is for the logged in user
+    if state == str(request.user.id):
+        canvas_api = CanvasAPI(user=request.user)
+        canvas_api_key = canvas_api.get_canvas_api_key(code=code)
+        user = User.objects.get(id=state)
+        api_user = user.apiuser
+        api_user.canvas_api_key = canvas_api_key
+        api_user.save()
+
+    return redirect('/')
 
 def log(username, error):
     log = Log(username=username, error=error)

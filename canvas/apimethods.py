@@ -305,18 +305,50 @@ class CanvasAPI:
     ##########################################################
     # API methods
     ##########################################################
+
+    # def get_canvas_api_key(self, code):
+    #     auth_data = dict (
+    #         client_id=settings.CANVAS_CLIENT_ID,
+    #         redirect_uri=settings.OAUTH_REDIRECT_URI,
+    #         client_secret=settings.CANVAS_CLIENT_SECRET,
+    #         code=code
+    #     )
+    #     partial_url='login/oauth2/token?client_id={0}&redirect_uri={1}&client_secret={2}&code={3}'\
+    #         .format(settings.CANVAS_CLIENT_ID,
+    #                 settings.OAUTH_REDIRECT_URI,
+    #                 settings.CANVAS_CLIENT_SECRET,
+    #                 code)
+    #     r = self.post_canvas_request(partial_url=partial_url, data=None)
+    #     return r.json()['access_token']
+
+    def get_canvas_api_key(self, code):
+        auth_data = dict (
+            client_id=settings.CANVAS_CLIENT_ID,
+            redirect_uri=settings.OAUTH_REDIRECT_URI,
+            client_secret=settings.CANVAS_CLIENT_SECRET,
+            code=code
+        )
+        partial_url='login/oauth2/token'
+        r = self.post_canvas_request(partial_url=partial_url, data=auth_data, use_api=False)
+        return r.json()['access_token']
+
     def get_canvas_request(self, partial_url):
         try:
-            r = requests.get(url=CanvasAPI.get_canvas_url(partial_url),
+            r = requests.get(url=CanvasAPI.get_canvas_api_url(partial_url),
                              headers=self.get_canvas_headers())
             r.raise_for_status()
             return r
         except Exception as e:
             raise CanvasServiceException(canvas_exception=e)
 
-    def post_canvas_request(self, partial_url, data):
+    def post_canvas_request(self, partial_url, data, use_api=True):
         try:
-            r = requests.post(url=CanvasAPI.get_canvas_url(partial_url),
+            if use_api:
+                url = CanvasAPI.get_canvas_api_url(partial_url)
+            else:
+                url = CanvasAPI.get_canvas_url(partial_url)
+
+            r = requests.post(url=url,
                               data=json.dumps(data),
                               headers=self.get_canvas_headers())
             r.raise_for_status()
@@ -325,8 +357,18 @@ class CanvasAPI:
             raise CanvasServiceException(canvas_exception=e)
 
     @staticmethod
+    def get_canvas_api_url(partial_url):
+        return settings.CANVAS_URL.format('api/v1/{0}'.format(partial_url))
+
+    @staticmethod
     def get_canvas_url(partial_url):
         return settings.CANVAS_URL.format(partial_url)
+
+    @staticmethod
+    def get_canvas_oauth_redirect_url(client_id):
+        canvas_oauth_path = '/login/oauth2/auth?client_id={0}&response_type=code&redirect_uri={1}&state={2}'\
+            .format(settings.CANVAS_CLIENT_ID, settings.OAUTH_REDIRECT_URI, client_id )
+        return settings.CANVAS_URL.format(canvas_oauth_path)
 
     def get_canvas_headers(self):
         # TODO: now: decrypt encrypted token

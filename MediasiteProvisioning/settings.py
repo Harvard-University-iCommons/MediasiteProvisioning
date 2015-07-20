@@ -131,21 +131,29 @@ MEDIASITE_PASSWORD = 'daft-jaggy-beauty'
 #############################################################
 # MEDIASITE_API_KEY = '4746f072-7faa-4b91-8fdf-3b3aca910c26'
 # MEDIASITE_URL = 'https://dvsdev.mediasite.video.harvard.edu/mediasite/api/v1/{0}'
-# CANVAS_URL = 'https://canvas-sandbox.tlt.harvard.edu/api/v1/{0}'
+# CANVAS_URL = 'https://canvas-sandbox.tlt.harvard.edu/{0}'
+# CANVAS_CLIENT_ID = '18750000000000010'
+# CANVAS_CLIENT_SECRET = 'OSt6R865JV6h4s9LYKRVQnwrmcsqhRYIW9ErHik1ieMP9Ba6DG9QvSYbaSRY5elN'
+# OAUTH_REDIRECT_URI = 'http://localhost:8000/oauth'
 
 #############################################################
 # Test
 #############################################################
 MEDIASITE_API_KEY = 'e368e3bb-4a6a-48a7-af17-a868300c6d63'
 MEDIASITE_URL = 'https://sandbox.mediasite.video.harvard.edu/mediasite/api/v1/{0}'
-CANVAS_URL = 'https://harvard.test.instructure.com/api/v1/{0}'
+CANVAS_URL = 'https://harvard.test.instructure.com/{0}'
+CANVAS_CLIENT_ID = '18750000000000010'
+CANVAS_CLIENT_SECRET = 'OSt6R865JV6h4s9LYKRVQnwrmcsqhRYIW9ErHik1ieMP9Ba6DG9QvSYbaSRY5elN'
+OAUTH_REDIRECT_URI = 'http://localhost:8000/web/oauth'
 
 #############################################################
 # Prod
 #############################################################
 # MEDIASITE_API_KEY = 'e368e3bb-4a6a-48a7-af17-a868300c6d63'
 # MEDIASITE_URL = 'https://sandbox.mediasite.video.harvard.edu/mediasite/api/v1/{0}'
-# CANVAS_URL = 'https://canvas.harvard.edu/api/v1/{0}'
-
+# CANVAS_URL = 'https://canvas.harvard.edu/{0}'
+# CANVAS_CLIENT_ID = '18750000000000010'
+# CANVAS_CLIENT_SECRET = 'OSt6R865JV6h4s9LYKRVQnwrmcsqhRYIW9ErHik1ieMP9Ba6DG9QvSYbaSRY5elN'
+# OAUTH_REDIRECT_URI = 'http://localhost:8000/oauth'
 
 

@@ -5,7 +5,7 @@ from .models import School, APIUser, Log
 
 class LogAdmin(admin.ModelAdmin):
     model = Log
-    list_display = ('created', 'username', 'error' )
+    list_display = ('created', 'username', 'error')
 
 class SchoolAdmin(admin.ModelAdmin):
     list_display = ('canvas_id', 'name', 'mediasite_root_folder')
