@@ -43,7 +43,7 @@ def search(request):
         log(username=request.user.username, error=error)
 
         if ce.status_code() == 401:
-            # TODO: if we get a 401 it means, probably, that the access token that the user has
+            # if we get a 401 it means, probably, that the access token that the user has
             # is invalid, or the user does not have a token.  we should redirect them to canvas to get a token
             canvas_redirect_url = CanvasAPI.get_canvas_oauth_redirect_url(client_id=request.user.id)
             return redirect(canvas_redirect_url)
