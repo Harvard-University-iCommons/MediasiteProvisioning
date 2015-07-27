@@ -1,6 +1,7 @@
 import requests
 import json
 import uuid
+import urllib
 from django.conf import settings
 from requests.auth import HTTPBasicAuth
 
@@ -48,6 +49,7 @@ class MediasiteAPI:
     def get_folder(name, parent_folder_id):
         if parent_folder_id is None:
             parent_folder_id = MediasiteAPI.get_root_folder_id()
+        name = urllib.parse.quote_plus(name)
         url = 'Folders?$filter=ParentFolderId eq \'{0}\' and Name eq \'{1}\''.format(parent_folder_id, name)
         json = MediasiteAPI.get_mediasite_request(url)
         # the json returned is in the oData format, and there do not appear to be any
@@ -96,6 +98,7 @@ class MediasiteAPI:
 
     @staticmethod
     def get_catalog(catalog_name, course_folder_id):
+        catalog_name= urllib.parse.quote_plus(catalog_name)
         url = 'Catalogs?$filter=Name eq \'{0}\''.format(catalog_name)
         json = MediasiteAPI.get_mediasite_request(url)
         # the json returned is in the oData format, and there do not appear to be any

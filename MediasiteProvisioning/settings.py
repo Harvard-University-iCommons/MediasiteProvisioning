@@ -61,7 +61,7 @@ TEMPLATES = [
     },
 ]
 
-WSGI_APPLICATION = 'MediasiteProvisioning.wsgi.application'
+WSGI_APPLICATION = 'wsgi.application'
 
 # Internationalization
 # https://docs.djangoproject.com/en/1.8/topics/i18n/
@@ -82,6 +82,8 @@ ALLOWED_HOSTS = []
 # https://docs.djangoproject.com/en/1.8/howto/static-files/
 
 STATIC_URL = '/static/'
+
+STATIC_ROOT = 'static_files'
 
 STATICFILES_DIRS = (
     # Put strings here, like "/home/html/static" or "C:/www/django/static".
@@ -123,9 +125,6 @@ DEBUG = True
 OAUTH_CONSUMER_KEY='mediasite-email-address'
 OAUTH_SHARED_SECRET='mediasite-email-address'
 
-MEDIASITE_USERNAME = 'Nick_Carmello'
-MEDIASITE_PASSWORD = 'daft-jaggy-beauty'
-
 #############################################################
 # Dev
 #############################################################
@@ -135,6 +134,8 @@ MEDIASITE_PASSWORD = 'daft-jaggy-beauty'
 # CANVAS_CLIENT_ID = '18750000000000010'
 # CANVAS_CLIENT_SECRET = 'OSt6R865JV6h4s9LYKRVQnwrmcsqhRYIW9ErHik1ieMP9Ba6DG9QvSYbaSRY5elN'
 # OAUTH_REDIRECT_URI = 'http://localhost:8000/oauth'
+# MEDIASITE_USERNAME = 'Nick_Carmello'
+# MEDIASITE_PASSWORD = 'daft-jaggy-beauty'
 
 #############################################################
 # Test
@@ -145,6 +146,8 @@ CANVAS_URL = 'https://harvard.test.instructure.com/{0}'
 CANVAS_CLIENT_ID = '18750000000000010'
 CANVAS_CLIENT_SECRET = 'OSt6R865JV6h4s9LYKRVQnwrmcsqhRYIW9ErHik1ieMP9Ba6DG9QvSYbaSRY5elN'
 OAUTH_REDIRECT_URI = 'http://localhost:8000/web/oauth'
+MEDIASITE_USERNAME = 'Nick_Carmello'
+MEDIASITE_PASSWORD = 'daft-jaggy-beauty'
 
 #############################################################
 # Prod
@@ -155,5 +158,7 @@ OAUTH_REDIRECT_URI = 'http://localhost:8000/web/oauth'
 # CANVAS_CLIENT_ID = '18750000000000010'
 # CANVAS_CLIENT_SECRET = 'OSt6R865JV6h4s9LYKRVQnwrmcsqhRYIW9ErHik1ieMP9Ba6DG9QvSYbaSRY5elN'
 # OAUTH_REDIRECT_URI = 'http://localhost:8000/oauth'
+# MEDIASITE_USERNAME = 'Nick_Carmello'
+# MEDIASITE_PASSWORD = 'daft-jaggy-beauty'
 
 

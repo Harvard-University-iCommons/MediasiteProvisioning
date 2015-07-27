@@ -10,7 +10,7 @@ import sys
 from datetime import datetime
 from canvas.apimethods import CanvasAPI, CanvasServiceException
 from canvas.apimodels import Term, SearchResults
-from mediasite.apimethods import MediasiteAPI
+from mediasite.apimethods import MediasiteAPI, MediasiteServiceException
 from mediasite.apimodels import UserProfile, Role
 from .forms import IndexForm
 from .models import School, Log, APIUser
@@ -165,8 +165,18 @@ def provision(request):
         else:
             return HttpResponseServerError(content='The system is not configured to communicate with Mediasite. '
                                                    'School/account : {0}'.format(account.name))
-    except:
-        error=sys.exc_info()
+    except CanvasServiceException as ce:
+        canvas_exception = ce._canvas_exception
+        error = '{0} [{1}]'.format(ce, canvas_exception)
+        log(username=request.user.username, error=error)
+        return HttpResponseServerError(content='Canvas error : {0}'.format(error))
+    except MediasiteServiceException as me:
+        canvas_exception = me._mediasite_exception
+        error = '{0} [{1}]'.format(me, canvas_exception)
+        log(username=request.user.username, error=error)
+        return HttpResponseServerError(content='Mediasite error : {0}'.format(error))
+    except Exception as e:
+        error = e
         log(username=request.user.username, error=error)
         return HttpResponseServerError(content='Unknown error : {0}'.format(error))
 
