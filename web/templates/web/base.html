@@ -7,31 +7,34 @@
     <script src="http://code.jquery.com/jquery-1.11.3.min.js"></script>
 {% endif %}
 
-<div>
+<div class="main">
     <!-- Header -->
     <div class="top_bar">
-        {% if request.user.is_authenticated %}
-            <div class="user">
+
+        <!-- Top bar -->
+        <a href="http://www.harvard.edu">Harvard.edu</a>
+    </div>
+    <div class="main_header">
+        <div class="user">
+            {% if request.user.is_authenticated %}
+            <div>
                 {% if request.user.first_name %}
                     Welcome {{ request.user.first_name }} {{ request.user.last_name }}
                 {% else %}
                     Welcome {{ request.user.username }}
                 {% endif %}
-                <a href ='{% url 'logout' %}'>Logout</a>
             </div>
-        {% endif %}
-        <!-- Top bar -->
-        <a href="http://www.harvard.edu">Harvard.edu</a>
-    </div>
-    <div class="main_header">
+            <a href ='{% url 'logout' %}'>(Logout)</a>
+            {% endif %}
+        </div>
         <!-- Main Header -->
         <div>
-            <div class="logo"></div>
+            <img alt="Harvard University Information Technology" src="http://static.hwpi.harvard.edu/files/styles/os_files_medium/public/huit/files/logo.png?itok=F_YObg-K" />
             <div></div>
         </div>
         <div>
-            <h1>Welcome to DVSP</h1>
-            <p>Provision Mediasite for your classroom</p>
+            <span class="welcome">Welcome to DVSP</span>
+            Provision Mediasite for your classroom
         </div>
     </div>
     {% block subheader %}
@@ -46,7 +49,7 @@
         {%  endif %}
     </div>
     {% endblock %}
-</div>
-<div>
-    {% block content %}{% endblock %}
+    <div>
+        {% block content %}{% endblock %}
+    </div>
 </div>

@@ -7,8 +7,9 @@
             <form id="form" action="{% url 'web:index' %}" method="post" >{%  csrf_token %}
                 <div>{{ form.accounts }}</div>
                 <div>{{ form.search }}</div>
-                <input type="hidden" value="1" name="page" id="page" />
-                <input type="submit" value="Search">
+                <div><input type="hidden" value="1" name="page" id="page" />
+                <input type="submit" value="Search"></div>
+
             </form>
         {%  endif %}
     </div>
@@ -16,93 +17,117 @@
 
 {% block content %}
     <!-- Main -->
-    <div class="left_nav">
-        <!-- Left nav/facets -->
-        {% if results.terms %}
-            <div>
-                Terms
-                {%  for term in results.terms %}
+    <div >
+        <div class="left_nav">
+            {% if false %}
+                <!-- Left nav/facets -->
+                {% if results.terms %}
                     <div>
-                        {{ term.name }}
+                        Terms
+                        {%  for term in results.terms %}
+                            <div>
+                                {{ term.name }}
+                            </div>
+                        {% endfor %}
+                        <br/>
                     </div>
-                {% endfor %}
-                <br/>
-            </div>
-        {%  endif %}
+                {%  endif %}
 
-        {% if results.years %}
-            <div>
-                Years
-                {% for year in results.years %}
+                {% if results.years %}
                     <div>
-                        {{ year }}
+                        Years
+                        {% for year in results.years %}
+                            <div>
+                                {{ year }}
+                            </div>
+                        {% endfor %}
+                        <br/>
                     </div>
-                {% endfor %}
-                <br/>
-            </div>
-        {% endif %}
-    </div>
-    <div class="results">
-        <!-- Errors -->
-        {% if error %}
-            {{ error }}
-        <!-- Results -->
-        {% elif results %}
-            {% if results.count == 0 %}
-                There are no courses that match your search terms
-            {% else %}
-                {% for course in results.search_results %}
-                    <div>
-                        <div>
-                            {{ course.name }} ( {{ course.course_code }} )
-                        </div>
-                        <div>
-                            {{ course.start_at }} - {{ course.end_at }}
-                        </div>
-                        <div>
-                            {% if course.teaching_users %}
-                                {% for user in course.teaching_users  %}
-                                    <div>
-                                        {{ user.name }}
-                                    </div>
-                                {% endfor %}
-                            {% endif %}
-
-                        </div>
-                        <div>
-                            {% if course.canvas_mediasite_external_link %}
-                                <a href="{{ course.canvas_mediasite_external_link.url }}">Mediasite Catalog</a>
-                            {% else %}
-                                Mediasite is not provisioned.
-                                {%  if course.term %}
-                                    Provision Mediasite?
-                                    <button id="{{ course.id }}" onclick="ProvisionMediasite('{{ results.school.mediasite_root_folder }}',
-                                            '{{ course.term.name }}',
-                                            '{{ course.id }}',
-                                            '{{ course.year }}',
-                                            '{{ results.school.canvas_id }}')">Provision</button>
-                                {% else %}
-                                    Mediasite cannot be provisioned because the course does not have a term.
-                                {% endif %}
-                            {% endif %}
-                        </div>
-                    </div>
-                    <br />
-                {% endfor %}
-            {% endif %}
-        {% else %}
-            Please select a school and enter a course name or number in the search box to find courses to provision to Mediasite
-        {% endif %}
-
-        <div class="paging">
-            {% if results.links %}
-                {% for link in results.links %}
-                    <a href="#" onclick="LoadPage('{{ link.page }}'); return false;">{{ link.rel }}</a> &nbsp;
-                {% endfor %}
-
-            {% endif %}
+                {% endif %}
+            {%  endif %}
         </div>
 
+        <div class="results">
+            <!-- Errors -->
+            {% if error %}
+                {{ error }}
+            <!-- Results -->
+            {% elif results %}
+                {% if results.count == 0 %}
+                    There are no courses that match your search terms
+                {% else %}
+                    <div style="height:50px; font-weight: bold;">
+                        <div style="float:left; padding-right:20px; width:500px; ">
+                            COURSES
+                        </div>
+                        <div style="float:left;  padding-right:20px; width:100px;">
+                            YEAR
+                        </div>
+                        <div style="float:left;  padding-right:20px; width:150px;">
+                            TERM
+                        </div>
+                        <div style="float:left;">
+                            MEDIASITE STATUS
+                        </div>
+                    </div>
+                    {% for course in results.search_results %}
+                        <div>
+                            <div style="min-height:20px;">
+                                <div style="float:left; padding-right:20px; width:500px; font-weight: bold;">
+                                    {{ course.name }} ( {{ course.course_code }} )
+                                </div>
+                                <div style="float:left;  padding-right:20px; width:100px;">
+                                    {{ course.year }}
+                                </div>
+                                <div style="float:left;  padding-right:20px; width:150px;">
+                                    {{ course.term.name }}
+                                </div>
+                                <div style="float:left;">
+                                    {% if course.canvas_mediasite_external_link %}
+                                        <a href="{{ course.canvas_mediasite_external_link.url }}" target="_blank">View Mediasite Catalog</a>
+                                    {% else %}
+                                        {%  if course.term %}
+                                            <button id="{{ course.id }}" onclick="ProvisionMediasite('{{ results.school.mediasite_root_folder }}',
+                                                    '{{ course.term.name }}',
+                                                    '{{ course.id }}',
+                                                    '{{ course.year }}',
+                                                    '{{ results.school.canvas_id }}')">Provision Mediasite</button>
+                                        {% else %}
+                                            Mediasite cannot be provisioned because the course does not have a term.
+                                    {% endif %}
+                                {% endif %}
+                                </div>
+                            </div>
+                            <div style="clear:left; padding-top:5px;">
+                                {{ course.start_at }} - {{ course.end_at }}
+                            </div>
+                            <div>
+                                {% if course.teaching_users %}
+                                    {% for user in course.teaching_users  %}
+                                        <div>
+                                            {{ user.name }}
+                                        </div>
+                                    {% endfor %}
+                                {% endif %}
+                            </div>
+                        </div>
+                        <br />
+                    {% endfor %}
+                {% endif %}
+            {% else %}
+                Please select a school and enter a course name or number in the search box to find courses to provision to Mediasite
+            {% endif %}
+
+            <div class="paging">
+                {% if results.links %}
+                    {% for link in results.links %}
+                        <a href="#" onclick="LoadPage('{{ link.page }}'); return false;">{{ link.rel }}</a> &nbsp;
+                    {% endfor %}
+
+                {% endif %}
+            </div>
+
+        </div>
     </div>
 
 
