@@ -112,8 +112,7 @@ DATABASES = {
     }
 }
 
-# Determines whether we provision user profiles in Mediasite. Currently false pending IAM discussion
-CREATE_USER_PROFILES_FOR_TEACHERS = False
+
 
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = 'cdkbbnxtmcqcs*%0h(hj*0lla+(+&f-2+mao+ga6=c=10eut++'
@@ -136,6 +135,8 @@ OAUTH_SHARED_SECRET='mediasite-email-address'
 # OAUTH_REDIRECT_URI = 'http://localhost:8000/oauth'
 # MEDIASITE_USERNAME = 'Nick_Carmello'
 # MEDIASITE_PASSWORD = 'daft-jaggy-beauty'
+# Determines whether we provision user profiles in Mediasite. Currently false pending IAM discussion
+# CREATE_USER_PROFILES_FOR_TEACHERS = False
 
 #############################################################
 # Test
@@ -148,6 +149,8 @@ CANVAS_CLIENT_SECRET = 'OSt6R865JV6h4s9LYKRVQnwrmcsqhRYIW9ErHik1ieMP9Ba6DG9QvSYb
 OAUTH_REDIRECT_URI = 'http://localhost:8000/web/oauth'
 MEDIASITE_USERNAME = 'Nick_Carmello'
 MEDIASITE_PASSWORD = 'daft-jaggy-beauty'
+# Determines whether we provision user profiles in Mediasite. Currently false pending IAM discussion
+CREATE_USER_PROFILES_FOR_TEACHERS = False
 
 #############################################################
 # Prod
@@ -160,5 +163,6 @@ MEDIASITE_PASSWORD = 'daft-jaggy-beauty'
 # OAUTH_REDIRECT_URI = 'http://localhost:8000/oauth'
 # MEDIASITE_USERNAME = 'Nick_Carmello'
 # MEDIASITE_PASSWORD = 'daft-jaggy-beauty'
-
+# Determines whether we provision user profiles in Mediasite. Currently false pending IAM discussion
+# CREATE_USER_PROFILES_FOR_TEACHERS = False
 
