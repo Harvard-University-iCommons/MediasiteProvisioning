@@ -12,8 +12,9 @@ https://docs.djangoproject.com/en/1.8/ref/settings/
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 import os
+from .secure import SECURE_SETTINGS
 
-BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/1.8/howto/deployment/checklist/
@@ -61,7 +62,7 @@ TEMPLATES = [
     },
 ]
 
-WSGI_APPLICATION = 'wsgi.application'
+WSGI_APPLICATION = 'MediasiteProvisioning.wsgi.application'
 
 # Internationalization
 # https://docs.djangoproject.com/en/1.8/topics/i18n/
@@ -80,10 +81,9 @@ ALLOWED_HOSTS = []
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/1.8/howto/static-files/
-
 STATIC_URL = '/static/'
-
-STATIC_ROOT = 'static_files'
+# Used by 'collectstatic' management command
+STATIC_ROOT = os.path.normpath(os.path.join(BASE_DIR, 'http_static'))
 
 STATICFILES_DIRS = (
     # Put strings here, like "/home/html/static" or "C:/www/django/static".
@@ -96,11 +96,8 @@ TEMPLATE_DIRS = (
     os.path.join(BASE_DIR, 'web/templates'),
 )
 
-###################################################################
-#
-#   Configuration values to be externalized in S3
-#
-###################################################################
+# Determines whether we provision user profiles in Mediasite. Currently false pending IAM discussion
+CREATE_USER_PROFILES_FOR_TEACHERS = False
 
 # Database
 # https://docs.djangoproject.com/en/1.8/ref/settings/#databases
@@ -112,57 +109,27 @@ DATABASES = {
     }
 }
 
-
+###################################################################
+#
+#   Configuration values to be externalized in S3
+#
+###################################################################
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'cdkbbnxtmcqcs*%0h(hj*0lla+(+&f-2+mao+ga6=c=10eut++'
+SECRET_KEY = SECURE_SETTINGS.get('django_secret_key')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = SECURE_SETTINGS.get('enable_debug', False)
 
+MEDIASITE_API_KEY = SECURE_SETTINGS.get('mediasite_api_key')
+MEDIASITE_URL = SECURE_SETTINGS.get('mediasite_url')
+CANVAS_URL = SECURE_SETTINGS.get('canvas_url')
+CANVAS_CLIENT_ID = SECURE_SETTINGS.get('canvas_client_id')
+CANVAS_CLIENT_SECRET = SECURE_SETTINGS.get('canvas_client_secret')
+OAUTH_REDIRECT_URI = SECURE_SETTINGS.get('oauth_redirect_uri')
+MEDIASITE_USERNAME = SECURE_SETTINGS.get('mediasite_username')
+MEDIASITE_PASSWORD = SECURE_SETTINGS.get('mediasite_password')
 # Mediasite OAUTH defaults
-OAUTH_CONSUMER_KEY='mediasite-email-address'
-OAUTH_SHARED_SECRET='mediasite-email-address'
-
-#############################################################
-# Dev
-#############################################################
-# MEDIASITE_API_KEY = '4746f072-7faa-4b91-8fdf-3b3aca910c26'
-# MEDIASITE_URL = 'https://dvsdev.mediasite.video.harvard.edu/mediasite/api/v1/{0}'
-# CANVAS_URL = 'https://canvas-sandbox.tlt.harvard.edu/{0}'
-# CANVAS_CLIENT_ID = '18750000000000010'
-# CANVAS_CLIENT_SECRET = 'OSt6R865JV6h4s9LYKRVQnwrmcsqhRYIW9ErHik1ieMP9Ba6DG9QvSYbaSRY5elN'
-# OAUTH_REDIRECT_URI = 'http://localhost:8000/oauth'
-# MEDIASITE_USERNAME = 'Nick_Carmello'
-# MEDIASITE_PASSWORD = 'daft-jaggy-beauty'
-# Determines whether we provision user profiles in Mediasite. Currently false pending IAM discussion
-# CREATE_USER_PROFILES_FOR_TEACHERS = False
-
-#############################################################
-# Test
-#############################################################
-MEDIASITE_API_KEY = 'e368e3bb-4a6a-48a7-af17-a868300c6d63'
-MEDIASITE_URL = 'https://sandbox.mediasite.video.harvard.edu/mediasite/api/v1/{0}'
-CANVAS_URL = 'https://harvard.test.instructure.com/{0}'
-CANVAS_CLIENT_ID = '18750000000000010'
-CANVAS_CLIENT_SECRET = 'OSt6R865JV6h4s9LYKRVQnwrmcsqhRYIW9ErHik1ieMP9Ba6DG9QvSYbaSRY5elN'
-OAUTH_REDIRECT_URI = 'http://localhost:8000/web/oauth'
-MEDIASITE_USERNAME = 'Nick_Carmello'
-MEDIASITE_PASSWORD = 'daft-jaggy-beauty'
-# Determines whether we provision user profiles in Mediasite. Currently false pending IAM discussion
-CREATE_USER_PROFILES_FOR_TEACHERS = False
-
-#############################################################
-# Prod
-#############################################################
-# MEDIASITE_API_KEY = 'e368e3bb-4a6a-48a7-af17-a868300c6d63'
-# MEDIASITE_URL = 'https://sandbox.mediasite.video.harvard.edu/mediasite/api/v1/{0}'
-# CANVAS_URL = 'https://canvas.harvard.edu/{0}'
-# CANVAS_CLIENT_ID = '18750000000000010'
-# CANVAS_CLIENT_SECRET = 'OSt6R865JV6h4s9LYKRVQnwrmcsqhRYIW9ErHik1ieMP9Ba6DG9QvSYbaSRY5elN'
-# OAUTH_REDIRECT_URI = 'http://localhost:8000/oauth'
-# MEDIASITE_USERNAME = 'Nick_Carmello'
-# MEDIASITE_PASSWORD = 'daft-jaggy-beauty'
-# Determines whether we provision user profiles in Mediasite. Currently false pending IAM discussion
-# CREATE_USER_PROFILES_FOR_TEACHERS = False
+OAUTH_SHARED_SECRET = SECURE_SETTINGS.get('oauth_shared_secret')
+OAUTH_CONSUMER_KEY = SECURE_SETTINGS.get('oauth_consumer_key')
 
