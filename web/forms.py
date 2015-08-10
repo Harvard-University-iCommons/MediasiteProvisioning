@@ -5,7 +5,7 @@ from .models import School
 
 class IndexForm(forms.Form):
     accounts = None
-    search = forms.CharField(min_length=3, widget=forms.TextInput(attrs={'placeholder': 'Search term'}))
+    search = forms.CharField(min_length=3, widget=forms.TextInput(attrs={'placeholder': 'Please enter at least 3 characters'}))
     search_results = ()
 
     def __init__(self, *args, **kwargs):

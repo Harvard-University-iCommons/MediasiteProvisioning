@@ -3,6 +3,7 @@ import enum
 import json
 import sys
 from django.conf import settings
+from django.core.exceptions import ObjectDoesNotExist
 from operator import itemgetter, attrgetter, methodcaller
 from rest_framework.exceptions import APIException
 from .serializer import AccountSerializer, CourseSerializer, EnrollmentSerializer, UserSerializer, ModuleSerializer
@@ -289,9 +290,10 @@ class CanvasAPI:
     @staticmethod
     def get_year_from_term(term):
         year = None
-        if term.sis_term_id:
-            start_year = int(float(term.sis_term_id[:4]))
-            return '{0}-{1}'.format(start_year, start_year + 1)
+        if hasattr(term, 'sis_term_id'):
+            if term.sis_term_id:
+                start_year = int(float(term.sis_term_id[:4]))
+                return '{0}-{1}'.format(start_year, start_year + 1)
 
     @staticmethod
     def get_year_from_start_date(year_start_at):
@@ -372,5 +374,10 @@ class CanvasAPI:
 
     def get_canvas_headers(self):
         # TODO: now: decrypt encrypted token
-        user_token = self._user.apiuser.canvas_api_key
+        user_token = ""
+        try:
+            user_token = self._user.apiuser.canvas_api_key
+        except ObjectDoesNotExist:
+            # do nothing
+            pass
         return {'Authorization': 'Bearer ' + user_token, 'Content-Type': 'application/json'}

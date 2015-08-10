@@ -23,6 +23,16 @@ class MediasiteServiceException(Exception):
             if hasattr(self._mediasite_exception, 'response'):
                 return self._mediasite_exception.response.status_code
 
+    def server_error(self):
+        if self._mediasite_exception:
+            if hasattr(self._mediasite_exception, 'response'):
+                try:
+                    error = self._mediasite_exception.response.json()['odata.error']['message']['value']
+                except:
+                    error = 'Could not extract error from server'
+                    pass
+                return error
+
 class MediasiteAPI:
     READ_ONLY_PERMISSION_FLAG = 5
     READ_WRITE_PERMISSION_FLAG = 7

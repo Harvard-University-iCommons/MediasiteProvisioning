@@ -9,7 +9,7 @@
           </mappings>
           <excludedPaths>
             <excludedPath local="true" path="$PROJECT_DIR$/MediasiteProvisioning/settings/secure.py" />
-            <excludedPath local="true" path="$PROJECT_DIR$/MediasiteProvisioning/db.sqlite3" />
+            <excludedPath local="true" path="$PROJECT_DIR$/db.sqlite3" />
           </excludedPaths>
         </serverdata>
       </paths>

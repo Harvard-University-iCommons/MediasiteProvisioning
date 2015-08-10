@@ -5,8 +5,10 @@ from django.conf import settings
 from django.contrib.auth.decorators import login_required
 from django.http import HttpResponseServerError, HttpResponse
 from django.contrib.auth.models import User
+from django.core.exceptions import ObjectDoesNotExist
 import string
 import sys
+import json
 from datetime import datetime
 from canvas.apimethods import CanvasAPI, CanvasServiceException
 from canvas.apimodels import Term, SearchResults
@@ -171,8 +173,8 @@ def provision(request):
         log(username=request.user.username, error=error)
         return HttpResponseServerError(content='Canvas error : {0}'.format(error))
     except MediasiteServiceException as me:
-        canvas_exception = me._mediasite_exception
-        error = '{0} [{1}]'.format(me, canvas_exception)
+        mediasite_exception = me._mediasite_exception
+        error = '{0} [{1}-{2}]'.format(me, mediasite_exception, me.server_error())
         log(username=request.user.username, error=error)
         return HttpResponseServerError(content='Mediasite error : {0}'.format(error))
     except Exception as e:
@@ -190,7 +192,15 @@ def oauth(request):
         canvas_api = CanvasAPI(user=request.user)
         canvas_api_key = canvas_api.get_canvas_api_key(code=code)
         user = User.objects.get(id=state)
-        api_user = user.apiuser
+        api_user = None
+        try:
+            api_user = user.apiuser
+        except ObjectDoesNotExist:
+            # do nothing
+            pass
+        if api_user is None:
+            api_user = APIUser()
+            api_user.user_id = user.id
         api_user.canvas_api_key = canvas_api_key
         api_user.save()
 
