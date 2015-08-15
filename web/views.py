@@ -184,27 +184,31 @@ def provision(request):
 
 @login_required()
 def oauth(request):
-    code = request.GET['code']
-    state = request.GET['state']
+    try:
+        code = request.GET['code']
+        state = request.GET['state']
 
-    # make sure that this response is for the logged in user
-    if state == str(request.user.id):
-        canvas_api = CanvasAPI(user=request.user)
-        canvas_api_key = canvas_api.get_canvas_api_key(code=code)
-        user = User.objects.get(id=state)
-        api_user = None
-        try:
-            api_user = user.apiuser
-        except ObjectDoesNotExist:
-            # do nothing
-            pass
-        if api_user is None:
-            api_user = APIUser()
-            api_user.user_id = user.id
-        api_user.canvas_api_key = canvas_api_key
-        api_user.save()
+        # make sure that this response is for the logged in user
+        if state == str(request.user.id):
+            canvas_api = CanvasAPI(user=request.user)
+            canvas_api_key = canvas_api.get_canvas_api_key(code=code)
+            user = User.objects.get(id=state)
+            api_user = None
+            try:
+                api_user = user.apiuser
+            except ObjectDoesNotExist:
+                # do nothing
+                pass
+            if api_user is None:
+                api_user = APIUser()
+                api_user.user_id = user.id
+            api_user.canvas_api_key = canvas_api_key
+            api_user.save()
 
-    return redirect('/')
+        return redirect('/')
+    except Exception as e:
+        error = e
+        log(username=request.user.username, error=error)
 
 def log(username, error):
     log = Log(username=username, error=error)

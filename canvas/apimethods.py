@@ -133,14 +133,14 @@ class CanvasAPI:
         serializer = ExternalToolSerializer(data=response.json(), many=True)
         if serializer.is_valid(raise_exception=True):
             external_tools = [ExternalTool(**attrs) for attrs in serializer.validated_data]
-            return next((i for i in external_tools if i.name == CanvasAPI.MEDIASITE_LINK_NAME), None)
+            return next((i for i in external_tools if i.name == CanvasAPI.MEDIASITE_EXTERNAL_TOOL_NAME), None)
 
     def create_mediasite_app_external_link(self, course_id, consumer_key, shared_secret, url):
         external_link = dict (
             consumer_key=consumer_key,
             shared_secret=shared_secret,
             url=url,
-            name=CanvasAPI.MEDIASITE_LINK_NAME,
+            name=CanvasAPI.MEDIASITE_EXTERNAL_TOOL_NAME,
             privacy_level='public',
             course_navigation=dict (
                 enabled=True,
