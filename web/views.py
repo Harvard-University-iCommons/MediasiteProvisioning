@@ -159,8 +159,7 @@ def provision(request):
                     consumer_key=oath_consumer_key,
                     shared_secret=shared_secret)
 
-                return HttpResponse(content='Successfully provisioned Mediasite course {0} and connected it to Canvas'
-                                    .format(course_long_name))
+                return HttpResponse(content=course_catalog.CatalogUrl)
             else:
                 return HttpResponseServerError(content='Unable to create or find Mediasite course folder : {0}'
                                                .format(course_long_name))

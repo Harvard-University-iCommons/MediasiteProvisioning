@@ -17,7 +17,7 @@
 
 {% block content %}
     <!-- Main -->
-    <div >
+    <div>
         <div class="left_nav">
             {% if false %}
                 <!-- Left nav/facets -->
@@ -92,13 +92,15 @@
                                                     '{{ course.id }}',
                                                     '{{ course.year }}',
                                                     '{{ results.school.canvas_id }}')">Provision Mediasite</button>
+
+                                            <a style="display: none" id="a_{{ course.id }}" href="" target="_blank">View Mediasite Catalog</a>
                                         {% else %}
                                             Mediasite cannot be provisioned because the course does not have a term.
                                     {% endif %}
                                 {% endif %}
                                 </div>
                             </div>
-                            <div style="clear:left; padding-top:5px;">
+                            <div style="padding-top:5px;">
                                 {{ course.start_at }} - {{ course.end_at }}
                             </div>
                             <div>
@@ -155,7 +157,9 @@
                 account_id: account_id
             },
             success: function(message) {
-                window.location.reload(true)
+                $("#a_" + courseId).attr('href', message);
+                $("#a_" + courseId).show();
+                $("#" + courseId).hide();
             },
             error: function(error) {
                 alert(error.responseText);

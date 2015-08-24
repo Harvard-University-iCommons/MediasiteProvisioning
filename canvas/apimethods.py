@@ -67,7 +67,7 @@ class CanvasAPI:
         terms = list()
         years = list()
         response = self.get_canvas_request(
-            partial_url='accounts/{0}/courses?include=term&published=true&completed=false&search_term={1}&page={2}&per_page=10'
+            partial_url='accounts/{0}/courses?include=term&completed=false&search_term={1}&page={2}&per_page=10'
                 .format(account_id, search_term, page))
 
         # get courses
@@ -146,7 +146,7 @@ class CanvasAPI:
                 enabled=True,
                 url=url,
                 visibility='members',
-                label=CanvasAPI.MEDIASITE_LINK_NAME
+                text=CanvasAPI.MEDIASITE_LINK_NAME
             )
         )
         data = {'external_tool': external_link}

@@ -18,7 +18,7 @@
 
 .left_nav {background: #E6E6E6; min-width:100px; float:left; height: 100%}
 
-.results {background: #FFFFFF; padding: 20px; float: left; color: #666666;
+.results {background: #FFFFFF; padding: 20px; margin-left:100px; color: #666666;
     font-family: Arial, "Helvetica Neue", Helvetica,  sans-serif; }
 
 .user {color: #98CBCE; float: left; padding-left: 20px;}
