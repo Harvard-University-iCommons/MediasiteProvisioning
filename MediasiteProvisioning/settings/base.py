@@ -71,7 +71,7 @@ LANGUAGE_CODE = 'en-us'
 
 TIME_ZONE = 'UTC'
 
-USE_I18N = True
+USE_I18N = False
 
 USE_L10N = True
 
@@ -132,4 +132,3 @@ MEDIASITE_PASSWORD = SECURE_SETTINGS.get('mediasite_password')
 # Mediasite OAUTH defaults
 OAUTH_SHARED_SECRET = SECURE_SETTINGS.get('oauth_shared_secret')
 OAUTH_CONSUMER_KEY = SECURE_SETTINGS.get('oauth_consumer_key')
-
