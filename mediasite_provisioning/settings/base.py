@@ -16,6 +16,9 @@ from .secure import SECURE_SETTINGS
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
+# SECURITY WARNING: don't run with debug turned on in production!
+DEBUG = SECURE_SETTINGS.get('enable_debug', False)
+
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/1.8/howto/deployment/checklist/
 
@@ -49,7 +52,7 @@ ROOT_URLCONF = 'MediasiteProvisioning.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [os.path.join(BASE_DIR, 'web/templates')],
+        'DIRS': [],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -58,6 +61,7 @@ TEMPLATES = [
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
             ],
+            'debug': DEBUG,
         },
     },
 ]
@@ -85,17 +89,6 @@ STATIC_URL = '/static/'
 # Used by 'collectstatic' management command
 STATIC_ROOT = os.path.normpath(os.path.join(BASE_DIR, 'http_static'))
 
-STATICFILES_DIRS = (
-    # Put strings here, like "/home/html/static" or "C:/www/django/static".
-    # Always use forward slashes, even on Windows.
-    # Don't forget to use absolute paths, not relative paths.
-    os.path.join(BASE_DIR, 'static'),
-)
-
-TEMPLATE_DIRS = (
-    os.path.join(BASE_DIR, 'web/templates'),
-)
-
 # Determines whether we provision user profiles in Mediasite. Currently false pending IAM discussion
 CREATE_USER_PROFILES_FOR_TEACHERS = False
 
@@ -117,9 +110,6 @@ DATABASES = {
 
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = SECURE_SETTINGS.get('django_secret_key')
-
-# SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = SECURE_SETTINGS.get('enable_debug', False)
 
 MEDIASITE_API_KEY = SECURE_SETTINGS.get('mediasite_api_key')
 MEDIASITE_URL = SECURE_SETTINGS.get('mediasite_url')
