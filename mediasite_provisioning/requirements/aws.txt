@@ -1,0 +1,2 @@
+# aws environment requirements, including base requirements
+-r base.txt
