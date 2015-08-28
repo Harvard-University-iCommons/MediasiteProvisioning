@@ -9,6 +9,7 @@ from django.core.exceptions import ObjectDoesNotExist
 import string
 import sys
 import json
+import logging
 from datetime import datetime
 from canvas.apimethods import CanvasAPI, CanvasServiceException
 from canvas.apimodels import Term, SearchResults
@@ -16,6 +17,9 @@ from mediasite.apimethods import MediasiteAPI, MediasiteServiceException
 from mediasite.apimodels import UserProfile, Role
 from .forms import IndexForm
 from .models import School, Log, APIUser
+
+logger = logging.getLogger(__name__)
+
 
 @login_required()
 def search(request):
@@ -210,6 +214,6 @@ def oauth(request):
         error = e
         log(username=request.user.username, error=error)
 
+
 def log(username, error):
-    log = Log(username=username, error=error)
-    log.save()
+    logger.exception("username %s encountered an error" % username)
