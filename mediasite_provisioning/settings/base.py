@@ -47,7 +47,7 @@ MIDDLEWARE_CLASSES = (
     'django.middleware.security.SecurityMiddleware',
 )
 
-ROOT_URLCONF = 'MediasiteProvisioning.urls'
+ROOT_URLCONF = 'mediasite_provisioning.urls'
 
 TEMPLATES = [
     {
@@ -66,7 +66,7 @@ TEMPLATES = [
     },
 ]
 
-WSGI_APPLICATION = 'MediasiteProvisioning.wsgi.application'
+WSGI_APPLICATION = 'mediasite_provisioning.wsgi.application'
 
 # Internationalization
 # https://docs.djangoproject.com/en/1.8/topics/i18n/
