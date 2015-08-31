@@ -59,8 +59,8 @@ class MediasiteAPI:
     def get_folder(name, parent_folder_id):
         if parent_folder_id is None:
             parent_folder_id = MediasiteAPI.get_root_folder_id()
-        name = urllib.parse.quote_plus(name)
-        url = 'Folders?$filter=ParentFolderId eq \'{0}\' and Name eq \'{1}\''.format(parent_folder_id, name)
+        encoded_name = urllib.parse.quote_plus(name)
+        url = 'Folders?$filter=ParentFolderId eq \'{0}\' and Name eq \'{1}\''.format(parent_folder_id, encoded_name)
         json = MediasiteAPI.get_mediasite_request(url)
         # the json returned is in the oData format, and there do not appear to be any
         # python libraries that parse oData.  we can extract the 'value' property of the list to get at the
@@ -68,8 +68,7 @@ class MediasiteAPI:
         serializer = FolderSerializer(data=json['value'], many=True)
         if serializer.is_valid(raise_exception=True):
             folders = [Folder(**attrs) for attrs in serializer.validated_data]
-            if len(folders) == 1:
-                return folders[0]
+            return next((f for f in folders if f.Name == name), None)
         else:
             errors = serializer.errors
 
