@@ -53,7 +53,7 @@ class Module(BaseSerializedModel):
     items_count = models.IntegerField()
 
 class Course(BaseSerializedModel):
-    sis_course_id = models.TextField(blank=True, null=True)
+    sis_course_id = models.TextField(blank=True, null=True, default="")
     name = models.TextField()
     course_code = models.TextField()
     workflow_state = models.TextField()
