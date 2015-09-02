@@ -67,7 +67,7 @@ class CanvasAPI:
         terms = list()
         years = list()
         response = self.get_canvas_request(
-            partial_url='accounts/{0}/courses?include=term&published=true&completed=false&search_term={1}&page={2}&per_page=10'
+            partial_url='accounts/{0}/courses?include=term&completed=false&search_term={1}&page={2}&per_page=10'
                 .format(account_id, search_term, page))
 
         # get courses
@@ -133,20 +133,20 @@ class CanvasAPI:
         serializer = ExternalToolSerializer(data=response.json(), many=True)
         if serializer.is_valid(raise_exception=True):
             external_tools = [ExternalTool(**attrs) for attrs in serializer.validated_data]
-            return next((i for i in external_tools if i.name == CanvasAPI.MEDIASITE_LINK_NAME), None)
+            return next((i for i in external_tools if i.name == CanvasAPI.MEDIASITE_EXTERNAL_TOOL_NAME), None)
 
     def create_mediasite_app_external_link(self, course_id, consumer_key, shared_secret, url):
         external_link = dict (
             consumer_key=consumer_key,
             shared_secret=shared_secret,
             url=url,
-            name=CanvasAPI.MEDIASITE_LINK_NAME,
+            name=CanvasAPI.MEDIASITE_EXTERNAL_TOOL_NAME,
             privacy_level='public',
             course_navigation=dict (
                 enabled=True,
                 url=url,
                 visibility='members',
-                label=CanvasAPI.MEDIASITE_LINK_NAME
+                text=CanvasAPI.MEDIASITE_LINK_NAME
             )
         )
         data = {'external_tool': external_link}
