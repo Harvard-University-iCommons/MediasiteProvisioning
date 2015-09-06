@@ -2,6 +2,7 @@
 import os
 import sys
 
+
 if __name__ == "__main__":
     if 'test' in sys.argv:
         os.environ['DJANGO_SETTINGS_MODULE'] = 'mediasite_provisioning.settings.test'

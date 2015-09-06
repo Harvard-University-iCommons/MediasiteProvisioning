@@ -56,9 +56,22 @@ class MediasiteAPI:
         return MediasiteAPI._root_folder_id
 
     @staticmethod
-    def get_folder(name, parent_folder_id):
+    def get_folder(name, parent_folder_id, alternative_search_term=None):
+        folders = MediasiteAPI.get_folders(name, parent_folder_id)
+        folder = next((f for f in folders if f.Name == name), None)
+        # the folder name can be too long for the API to parse, so we can use an alternate unique search term
+        # ideally the course sis id
+        if not folder and alternative_search_term is not None:
+            folders = MediasiteAPI.get_folders(alternative_search_term, parent_folder_id)
+            folder = next((f for f in folders if f.Name == name), None)
+        return folder
+
+    @staticmethod
+    def get_folders(name, parent_folder_id):
         if parent_folder_id is None:
             parent_folder_id = MediasiteAPI.get_root_folder_id()
+        # we only search on the first 40 characters of the folder name because the API does not seem able to process
+        # longer strings
         encoded_name = urllib.parse.quote_plus(name)
         url = 'Folders?$filter=ParentFolderId eq \'{0}\' and Name eq \'{1}\''.format(parent_folder_id, encoded_name)
         json = MediasiteAPI.get_mediasite_request(url)
@@ -67,8 +80,7 @@ class MediasiteAPI:
         # underlying json
         serializer = FolderSerializer(data=json['value'], many=True)
         if serializer.is_valid(raise_exception=True):
-            folders = [Folder(**attrs) for attrs in serializer.validated_data]
-            return next((f for f in folders if f.Name == name), None)
+            return [Folder(**attrs) for attrs in serializer.validated_data]
         else:
             errors = serializer.errors
 
@@ -86,11 +98,11 @@ class MediasiteAPI:
             errors = serializer.errors
 
     @staticmethod
-    def get_or_create_folder(name, parent_folder_id):
+    def get_or_create_folder(name, parent_folder_id, alternate_search_term=None):
         if parent_folder_id is None:
             parent_folder_id = MediasiteAPI.get_root_folder_id()
         if parent_folder_id is not None:
-            folder = MediasiteAPI.get_folder(name, parent_folder_id)
+            folder = MediasiteAPI.get_folder(name, parent_folder_id, alternate_search_term)
             if not folder:
                 folder = MediasiteAPI.create_folder(name, parent_folder_id)
         return folder
@@ -99,27 +111,31 @@ class MediasiteAPI:
     # Catalogs
     ######################################################
     @staticmethod
-    def get_or_create_catalog(friendly_name, catalog_name, course_folder_id):
-        catalog = MediasiteAPI.get_catalog(catalog_name, course_folder_id)
+    def get_or_create_catalog(friendly_name, catalog_name, course_folder_id, alternative_search_term):
+        catalog = MediasiteAPI.get_catalog(catalog_name, course_folder_id, alternative_search_term)
         if catalog is None:
             catalog = MediasiteAPI.create_catalog(friendly_name, catalog_name, course_folder_id)
         return catalog
 
     @staticmethod
-    def get_catalog(catalog_name, course_folder_id):
-        catalog_name= urllib.parse.quote_plus(catalog_name)
-        url = 'Catalogs?$filter=Name eq \'{0}\''.format(catalog_name)
+    def get_catalog(name, course_folder_id, alternative_search_term):
+        catalogs = MediasiteAPI.get_catalogs(name)
+        catalog = next((c for c in catalogs if c.LinkedFolderId == course_folder_id), None)
+        if not catalog and len(name) > 40:
+            catalogs = MediasiteAPI.get_catalogs(alternative_search_term)
+            catalog = next((c for c in catalogs if c.LinkedFolderId == course_folder_id and c.Name == name), None)
+        return catalog
+
+    @staticmethod
+    def get_catalogs(name):
+        encoded_name= urllib.parse.quote_plus(name)
+        url = 'Catalogs?$filter=Name eq \'{0}\''.format(encoded_name)
         json = MediasiteAPI.get_mediasite_request(url)
-        # the json returned is in the oData format, and there do not appear to be any
-        # python libraries that parse oData.  we can extract the 'value' property of the list to get at the
-        # underlying json
-        if float(json['odata.count']) > 0:
-            serializer = CatalogSerializer(data=json['value'], many=True)
-            if serializer.is_valid(raise_exception=True):
-                catalogs = [Catalog(**attrs) for attrs in serializer.validated_data]
-                return next((c for c in catalogs if c.LinkedFolderId == course_folder_id), None)
-            else:
-                errors = serializer.errors
+        serializer = CatalogSerializer(data=json['value'], many=True)
+        if serializer.is_valid(raise_exception=True):
+            return [Catalog(**attrs) for attrs in serializer.validated_data]
+        else:
+            errors = serializer.errors
 
     @staticmethod
     def create_catalog(friendly_name, catalog_name, course_folder_id):

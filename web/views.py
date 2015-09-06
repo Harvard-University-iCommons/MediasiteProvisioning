@@ -100,7 +100,8 @@ def provision(request):
                     term_folder = MediasiteAPI.get_or_create_folder(name=term, parent_folder_id=year_folder.Id)
                     if term_folder is not None:
                         course_folder = MediasiteAPI.get_or_create_folder(name=course_long_name,
-                                                                          parent_folder_id=term_folder.Id)
+                                                                          parent_folder_id=term_folder.Id,
+                                                                          alternate_search_term=course.sis_course_id)
 
             if course_folder is not None:
                 # create course catalog
@@ -111,7 +112,8 @@ def provision(request):
                 catalog_display_name = catalog_display_name.translate(dict((ord(char), None) for char in '<>*%:&\\ '))
                 course_catalog = MediasiteAPI.get_or_create_catalog(friendly_name=catalog_display_name,
                                                                     catalog_name=course_long_name,
-                                                                    course_folder_id=course_folder.Id)
+                                                                    course_folder_id=course_folder.Id,
+                                                                    alternative_search_term=course.course_code)
 
                 ###################################
                 # Assign permissions
