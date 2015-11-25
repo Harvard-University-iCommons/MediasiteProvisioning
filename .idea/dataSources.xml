@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
-  <component name="DataSourceManagerImpl" format="xml" hash="3996189341">
+  <component name="DataSourceManagerImpl" format="xml" hash="1984097082">
     <data-source source="LOCAL" name="Django default" uuid="ec05a83b-a555-4314-a15a-d0abd16db367">
       <driver-ref>sqlite.xerial</driver-ref>
       <synchronize>true</synchronize>
@@ -14,6 +14,12 @@
           <url>file://$APPLICATION_CONFIG_DIR$/jdbc-drivers/sqlite-jdbc-3.8.9.jar</url>
         </library>
       </libraries>
+    </data-source>
+    <data-source source="LOCAL" name="PostgreSQL - mediasite_provisioning@postgres.dev.tlt.harvard.edu" uuid="d3778ffb-02aa-4ab4-9b41-abc9de4f5e45">
+      <driver-ref>postgresql</driver-ref>
+      <synchronize>true</synchronize>
+      <jdbc-driver>org.postgresql.Driver</jdbc-driver>
+      <jdbc-url>jdbc:postgresql://postgres.dev.tlt.harvard.edu:5432/mediasite_provisioning</jdbc-url>
     </data-source>
   </component>
 </project>
