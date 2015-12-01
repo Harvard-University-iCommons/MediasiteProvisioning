@@ -87,6 +87,15 @@ def provision(request):
             # get the course from Canvas.
             course = canvas_api.get_course(course_id)
 
+            if hasattr(course, 'sis_course_id') == False:
+                raise Exception('While you can communicate with Canvas, you do not have permissions to view '
+                                'SIS properties and will not be able to provision courses.');
+
+            if getattr(course, 'sis_course_id', None) is None:
+                raise Exception('The course that you are trying to provision [{0}], does not have an SIS course '
+                                'Id and provisioning cannot continue.  Please contact your Canvas '
+                                'administrator'.format(course_id));
+
             # course long name
             course_long_name = "({0}) {1} {2} ({3})"\
                 .format(term, course.course_code, course.name, course.sis_course_id)

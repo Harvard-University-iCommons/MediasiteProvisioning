@@ -216,20 +216,20 @@ class MediasiteAPI:
         else:
             errors = serializer.errors
 
-    # @staticmethod
-    # def get_role_by_name(role_name):
-    #     url = 'Roles?$filter=Name eq \'{0}\''.format(role_name)
-    #     json = MediasiteAPI.get_mediasite_request(url)
-    #     # the json returned is in the oData format, and there do not appear to be any
+    @staticmethod
+    def get_role_by_name(role_name):
+        url = 'Roles?$filter=Name eq \'{0}\''.format(role_name)
+        json = MediasiteAPI.get_mediasite_request(url)
+        # the json returned is in the oData format, and there do not appear to be any
         # python libraries that parse oData.  we can extract the 'value' property of the list to get at the
         # underlying json
-    #     serializer = RoleSerializer(data=json['value'], many=True)
-    #     if serializer.is_valid(raise_exception=True):
-    #         roles = [Role(**attrs) for attrs in serializer.validated_data]
-    #         if len(roles) == 1:
-    #             return roles[0]
-    #     else:
-    #         errors = serializer.errors
+        serializer = RoleSerializer(data=json['value'], many=True)
+        if serializer.is_valid(raise_exception=True):
+            roles = [Role(**attrs) for attrs in serializer.validated_data]
+            if len(roles) == 1:
+                return roles[0]
+        else:
+            errors = serializer.errors
 
     @staticmethod
     def get_role_by_directory_entry(directory_entry):
@@ -250,7 +250,16 @@ class MediasiteAPI:
     def get_or_create_role(role_name, directory_entry):
         role = MediasiteAPI.get_role_by_directory_entry(directory_entry)
         if role is None:
-            role = MediasiteAPI.create_role(role_name, directory_entry)
+            role = MediasiteAPI.get_role_by_name(role_name)
+            if role is None:
+                role = MediasiteAPI.create_role(role_name, directory_entry)
+            elif role.DirectoryEntry != directory_entry:
+                raise Exception('A role with the name {0} already exists, but it has a '
+                                'different directory entry [{1}].  Provisioning cannot '
+                                'continue until this role is manually deleted'.format(role_name, directory_entry));
+                # TODO: if Mediasite ever allows us to delete or update a role.
+                # MediasiteAPI.delete_role(role);
+                # role = MediasiteAPI.create_role(role_name, directory_entry);
         return role
 
     ######################################################
@@ -295,6 +304,10 @@ class MediasiteAPI:
         return MediasiteAPI.mediasite_request(url=url, method='POST', body=body)
 
     @staticmethod
+    def put_mediasite_request(url, body):
+        return MediasiteAPI.mediasite_request(url=url, method='PUT', body=body)
+
+    @staticmethod
     def mediasite_request(url, method, body):
         try:
             if method == 'POST':
@@ -303,6 +316,18 @@ class MediasiteAPI:
                                   headers=MediasiteAPI.get_mediasite_headers(),
                                   data=json.dumps(body),
                                   verify=MediasiteAPI.is_production())
+            elif method == 'PUT':
+                r = requests.put(url=MediasiteAPI.get_mediasite_url(url),
+                                 auth=MediasiteAPI.get_mediasite_auth(),
+                                 headers=MediasiteAPI.get_mediasite_headers(),
+                                 data=json.dumps(body),
+                                 verify=MediasiteAPI.is_production())
+            elif method == 'DELETE':
+                r = requests.delete(url=MediasiteAPI.get_mediasite_url(url),
+                                    auth=MediasiteAPI.get_mediasite_auth(),
+                                    headers=MediasiteAPI.get_mediasite_headers(),
+                                    data=json.dumps(body),
+                                    verify=MediasiteAPI.is_production())
             else:
                 r = requests.get(url=MediasiteAPI.get_mediasite_url(url),
                                  auth=MediasiteAPI.get_mediasite_auth(),

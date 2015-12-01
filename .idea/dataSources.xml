@@ -6,6 +6,7 @@
       <synchronize>true</synchronize>
       <jdbc-driver>org.sqlite.JDBC</jdbc-driver>
       <jdbc-url>jdbc:sqlite:C:\Development\HUIT\Digital Video Services\MediasiteProvisioning\db.sqlite3</jdbc-url>
+      <default-dialect>SQLite</default-dialect>
       <libraries>
         <library>
           <url>file://$APPLICATION_CONFIG_DIR$/jdbc-drivers/xerial-sqlite-license.txt</url>
