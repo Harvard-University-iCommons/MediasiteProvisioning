@@ -89,12 +89,12 @@ def provision(request):
 
             if hasattr(course, 'sis_course_id') == False:
                 raise Exception('While you can communicate with Canvas, you do not have permissions to view '
-                                'SIS properties and will not be able to provision courses.');
+                                'SIS properties and will not be able to provision courses.')
 
             if getattr(course, 'sis_course_id', None) is None:
                 raise Exception('The course that you are trying to provision [{0}], does not have an SIS course '
                                 'Id and provisioning cannot continue.  Please contact your Canvas '
-                                'administrator'.format(course_id));
+                                'administrator'.format(course_id))
 
             # course long name
             course_long_name = "({0}) {1} {2} ({3})"\
@@ -142,6 +142,12 @@ def provision(request):
                 if canvas_user_role:
                     folder_permissions = MediasiteAPI.update_folder_permissions(
                         folder_permissions, canvas_user_role, MediasiteAPI.NO_ACCESS_PERMISSION_FLAG)
+
+                # remove authenticateduser role
+                authenticated_users_role = MediasiteAPI.get_role_by_name('AuthenticatedUsers')
+                if authenticated_users_role:
+                    folder_permissions = MediasiteAPI.update_folder_permissions(
+                        folder_permissions, authenticated_users_role, MediasiteAPI.NO_ACCESS_PERMISSION_FLAG)
 
                 # iterate through the teachers for this course, find or create their users in Mediasite and
                 # add read write permissions to the in memory permission set

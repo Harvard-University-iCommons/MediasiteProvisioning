@@ -256,7 +256,7 @@ class MediasiteAPI:
             elif role.DirectoryEntry != directory_entry:
                 raise Exception('A role with the name {0} already exists, but it has a '
                                 'different directory entry [{1}].  Provisioning cannot '
-                                'continue until this role is manually deleted'.format(role_name, directory_entry));
+                                'continue until this role is manually deleted'.format(role_name, role.DirectoryEntry));
                 # TODO: if Mediasite ever allows us to delete or update a role.
                 # MediasiteAPI.delete_role(role);
                 # role = MediasiteAPI.create_role(role_name, directory_entry);
