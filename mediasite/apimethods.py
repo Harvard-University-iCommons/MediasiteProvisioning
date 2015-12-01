@@ -73,7 +73,7 @@ class MediasiteAPI:
             parent_folder_id = MediasiteAPI.get_root_folder_id()
         # we only search on the first 40 characters of the folder name because the API does not seem able to process
         # longer strings
-        encoded_name = urllib.parse.quote_plus(name)
+        encoded_name = urllib.quote_plus(name)
         url = 'Folders?$filter=ParentFolderId eq \'{0}\' and Name eq \'{1}\''.format(parent_folder_id, encoded_name)
         json = MediasiteAPI.get_mediasite_request(url)
         # the json returned is in the oData format, and there do not appear to be any
@@ -130,7 +130,7 @@ class MediasiteAPI:
 
     @staticmethod
     def get_catalogs(name):
-        encoded_name= urllib.parse.quote_plus(name)
+        encoded_name= urllib.quote_plus(name)
         url = 'Catalogs?$filter=Name eq \'{0}\''.format(encoded_name)
         json = MediasiteAPI.get_mediasite_request(url)
         serializer = CatalogSerializer(data=json['value'], many=True)

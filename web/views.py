@@ -118,7 +118,7 @@ def provision(request):
                     .format(mediasite_root_folder, term, course.course_code)
                 # this is needed because a bug in Mediasite allows for the creation of a URL with potentially
                 # dangerous strings in it. we strip out the characters that we know might create that type of URL
-                catalog_display_name = catalog_display_name.translate(dict((ord(char), None) for char in '<>*%:&\\ '))
+                catalog_display_name = catalog_display_name.translate(None, '<>*%:&\\ ')
                 course_catalog = MediasiteAPI.get_or_create_catalog(friendly_name=catalog_display_name,
                                                                     catalog_name=course_long_name,
                                                                     course_folder_id=course_folder.Id,
