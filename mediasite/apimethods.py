@@ -88,8 +88,9 @@ class MediasiteAPI:
     @staticmethod
     def create_folder(name, parent_folder_id):
         folder_to_create = dict(
-            Name = name,
-            ParentFolderId = parent_folder_id
+            Name=name,
+            ParentFolderId=parent_folder_id,
+            IsReviewEditApproveEnabled=False
         )
         json = MediasiteAPI.post_mediasite_request('Folders', body=folder_to_create)
         serializer = FolderSerializer(data=json)
