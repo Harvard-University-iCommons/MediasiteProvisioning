@@ -34,6 +34,7 @@ class MediasiteServiceException(Exception):
                 return error
 
 class MediasiteAPI:
+    VIEW_ONLY_PERMISSION_FLAG = 4
     READ_ONLY_PERMISSION_FLAG = 5
     READ_WRITE_PERMISSION_FLAG = 7
     NO_ACCESS_PERMISSION_FLAG = 0

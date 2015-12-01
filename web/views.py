@@ -134,7 +134,7 @@ def provision(request):
                 directory_entry = "{0}@{1}".format(course.sis_course_id, oath_consumer_key)
                 course_role = MediasiteAPI.get_or_create_role(role_name=course_long_name, directory_entry=directory_entry)
                 folder_permissions = MediasiteAPI.update_folder_permissions(
-                    folder_permissions, course_role, MediasiteAPI.READ_ONLY_PERMISSION_FLAG)
+                    folder_permissions, course_role, MediasiteAPI.VIEW_ONLY_PERMISSION_FLAG)
 
                 # remove permissions for general canvas users users from the in memory permission set
                 # so that the course folder is secured
