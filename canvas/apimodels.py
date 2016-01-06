@@ -38,6 +38,7 @@ class Enrollment(BaseSerializedModel):
 
 class Account(BaseSerializedModel):
     name = models.TextField()
+    sis_account_id = models.TextField(blank=True, null=True, default="")
 
 class ModuleItem(BaseSerializedModel):
     module_id = models.TextField()

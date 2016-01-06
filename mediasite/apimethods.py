@@ -357,4 +357,5 @@ class MediasiteAPI:
     @staticmethod
     def is_production():
         return False
+        # return settings.DEBUG == False
 
