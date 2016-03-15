@@ -51,7 +51,8 @@ class CanvasAPI:
         response = self.get_canvas_request(partial_url='accounts')
         serializer = AccountSerializer(data=response.json(), many=True)
         if serializer.is_valid(raise_exception=True):
-            return [Account(**attrs) for attrs in serializer.validated_data if attrs.has_key('sis_account_id')]
+            # return [Account(**attrs) for attrs in serializer.validated_data if attrs.has_key('sis_account_id')]
+            return [Account(**attrs) for attrs in serializer.validated_data]
 
     ##########################################################
     # Courses
