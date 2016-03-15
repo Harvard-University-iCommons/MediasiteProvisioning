@@ -77,7 +77,7 @@ class CanvasAPI:
 
             for n, course in enumerate(results.search_results):
                 # get the Mediasite external link
-                course.canvas_mediasite_external_link = self.get_mediasite_app_external_link(course_id=course.id)
+                course.canvas_mediasite_external_link = self.get_mediasite_app_external_link(course_id=course.id, course_sis_id=course.sis_course_id)
 
                 # find and add years
                 course.year = None
@@ -128,19 +128,19 @@ class CanvasAPI:
     ##########################################################
     # External tools
     ##########################################################
-    def get_mediasite_app_external_link(self, course_id):
+    def get_mediasite_app_external_link(self, course_id, course_sis_id):
         response = self.get_canvas_request(partial_url='courses/{0}/external_tools'.format(course_id))
         serializer = ExternalToolSerializer(data=response.json(), many=True)
         if serializer.is_valid(raise_exception=True):
             external_tools = [ExternalTool(**attrs) for attrs in serializer.validated_data]
-            return next((i for i in external_tools if i.name == CanvasAPI.MEDIASITE_EXTERNAL_TOOL_NAME.format(course_id)), None)
+            return next((i for i in external_tools if i.name == CanvasAPI.MEDIASITE_EXTERNAL_TOOL_NAME.format(course_sis_id)), None)
 
-    def create_mediasite_app_external_link(self, course_id, consumer_key, shared_secret, url):
+    def create_mediasite_app_external_link(self, course_id, course_sis_id, consumer_key, shared_secret, url):
         external_link = dict (
             consumer_key=consumer_key,
             shared_secret=shared_secret,
             url=url,
-            name=CanvasAPI.MEDIASITE_EXTERNAL_TOOL_NAME.format(course_id),
+            name=CanvasAPI.MEDIASITE_EXTERNAL_TOOL_NAME.format(course_sis_id),
             privacy_level='public',
             course_navigation=dict (
                 enabled=True,
