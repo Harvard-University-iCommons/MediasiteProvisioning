@@ -34,7 +34,7 @@ class CanvasAppType(enum.Enum):
     ExternalTool = 'ExternalTool'
 
 class CanvasAPI:
-    MEDIASITE_EXTERNAL_TOOL_NAME = 'DVS Mediasite Lecture Video {0}'
+    MEDIASITE_EXTERNAL_TOOL_NAME = 'DVS Mediasite Lecture Video'
     MEDIASITE_MODULE_NAME = 'Course Lecture Video'
     MEDIASITE_MODULE_ITEM_NAME = 'Course Lecture Video'
     MEDIASITE_LINK_NAME = 'Lecture Video'
@@ -78,21 +78,12 @@ class CanvasAPI:
 
             for n, course in enumerate(results.search_results):
                 # get the Mediasite external link
-                course.canvas_mediasite_external_link = self.get_mediasite_app_external_link(course_id=course.id, course_sis_id=course.sis_course_id)
-
-                # find and add years
-                course.year = None
-                if course.term is not None:
-                    course.year = CanvasAPI.get_year_from_term(course.term)
-                if course.year is None and course.start_at is not None:
-                    course.year = CanvasAPI.get_year_from_start_date(course.start_at)
+                course.canvas_mediasite_external_link = self.get_mediasite_app_external_link(course_id=course.id, course_term=course.term.name)
 
                 if course.year not in years:
                     years.append(course.year)
 
                 # find and add terms
-                if course.term is None:
-                    course.term = Term(name='Full Year {0}'.format(course.year), start_at=course.start_at)
                 if next((t for t in terms if t.name == course.term.name), None) is None:
                     terms.append(course.term)
 
@@ -120,7 +111,7 @@ class CanvasAPI:
 
     def get_course(self, course_id):
         response = self.get_canvas_request(
-            partial_url='courses/{0}'.format(course_id)
+            partial_url='courses/{0}?include=term'.format(course_id)
         )
         serializer = CourseSerializer(data=response.json())
         if serializer.is_valid(raise_exception=True):
@@ -129,25 +120,39 @@ class CanvasAPI:
     ##########################################################
     # External tools
     ##########################################################
-    def get_mediasite_app_external_link(self, course_id, course_sis_id):
+    def get_mediasite_app_external_link(self, course_id, course_term):
         response = self.get_canvas_request(partial_url='courses/{0}/external_tools'.format(course_id))
         serializer = ExternalToolSerializer(data=response.json(), many=True)
         if serializer.is_valid(raise_exception=True):
             external_tools = [ExternalTool(**attrs) for attrs in serializer.validated_data]
-            return next((i for i in external_tools if i.name == CanvasAPI.MEDIASITE_EXTERNAL_TOOL_NAME.format(course_sis_id)), None)
+            return next((i for i in external_tools if i.name == "{0} {1}".format(CanvasAPI.MEDIASITE_EXTERNAL_TOOL_NAME, course_term)), None)
 
-    def create_mediasite_app_external_link(self, course_id, course_sis_id, consumer_key, shared_secret, url):
+    def get_mediasite_app_external_links(self, course_id):
+        response = self.get_canvas_request(partial_url='courses/{0}/external_tools'.format(course_id))
+        serializer = ExternalToolSerializer(data=response.json(), many=True)
+        if serializer.is_valid(raise_exception=True):
+            external_tools = [ExternalTool(**attrs) for attrs in serializer.validated_data]
+            return [i for i in external_tools if CanvasAPI.MEDIASITE_EXTERNAL_TOOL_NAME in i.name ]
+
+    def create_mediasite_app_external_link(self, course_id, course_term, consumer_key, shared_secret, url):
+        mediasite_link_name = CanvasAPI.MEDIASITE_LINK_NAME
+
+        # if there is already a external link then we want to distinguish this link in the navigation bar
+        # using the term name
+        if len(self.get_mediasite_app_external_links(course_id=course_id)) != 0:
+            mediasite_link_name = "{0} {1}".format(CanvasAPI.MEDIASITE_LINK_NAME, course_term)
+
         external_link = dict (
             consumer_key=consumer_key,
             shared_secret=shared_secret,
             url=url,
-            name=CanvasAPI.MEDIASITE_EXTERNAL_TOOL_NAME.format(course_sis_id),
+            name="{0} {1}".format(CanvasAPI.MEDIASITE_EXTERNAL_TOOL_NAME,course_term),
             privacy_level='public',
             course_navigation=dict (
                 enabled=True,
                 url=url,
                 visibility='members',
-                text=CanvasAPI.MEDIASITE_LINK_NAME
+                text=mediasite_link_name
             )
         )
         data = {'external_tool': external_link}
@@ -285,25 +290,7 @@ class CanvasAPI:
         if serializer.is_valid(raise_exception=True):
             return [User(**attrs) for attrs in serializer.validated_data]
 
-    ##########################################################
-    # Helper methods
-    ##########################################################
-    @staticmethod
-    def get_year_from_term(term):
-        year = None
-        if hasattr(term, 'sis_term_id'):
-            if term.sis_term_id:
-                start_year = int(float(term.sis_term_id[:4]))
-                return '{0}-{1}'.format(start_year, start_year + 1)
 
-    @staticmethod
-    def get_year_from_start_date(year_start_at):
-        # if the course starts in July or later
-        if year_start_at.month >= 7:
-            return '{0}-{1}'.format(year_start_at.year, year_start_at.year + 1)
-        else:
-            return '{0}-{1}'.format(year_start_at.year-1, year_start_at.year)
-        endif
 
     ##########################################################
     # API methods

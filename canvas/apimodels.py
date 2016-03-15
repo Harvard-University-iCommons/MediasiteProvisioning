@@ -1,6 +1,5 @@
 from django.db import models
 
-
 # Create your models here.
 
 class BaseSerializedModel(models.Model):
@@ -75,8 +74,44 @@ class Course(BaseSerializedModel):
         # Course has a hierarchy which needs to be manually initialized
         self.__dict__.update(kwargs)
         term = kwargs['term']
+
         if term:
             self.term = Term(**term)
+
+        # If the term is set to "Default Term" we know that it is bad data, so we get rid of it and rely on
+        # other methods to get the term
+        if self.term.name == "Default Term":
+            self.term = None
+
+        if self.term is not None:
+            self.year = Course.get_year_from_term(self.term)
+        if self.year is None and self.start_at is not None:
+            self.year = Course.get_year_from_start_date(self.start_at)
+        # setup the default term
+        # TODO: this logic could be improved to look at course dates, but since
+        # we should be getting good data from Canvas there should be no need
+        if self.term is None:
+            self.term = Term(name='Full Year {0}'.format(self.year), start_at=self.start_at)
+
+    ##########################################################
+    # Helper methods
+    ##########################################################
+    @staticmethod
+    def get_year_from_term(term):
+        year = None
+        if hasattr(term, 'sis_term_id'):
+            if term.sis_term_id:
+                start_year = int(float(term.sis_term_id[:4]))
+                return '{0}-{1}'.format(start_year, start_year + 1)
+
+    @staticmethod
+    def get_year_from_start_date(year_start_at):
+        # if the course starts in July or later
+        if year_start_at.month >= 7:
+            return '{0}-{1}'.format(year_start_at.year, year_start_at.year + 1)
+        else:
+            return '{0}-{1}'.format(year_start_at.year-1, year_start_at.year)
+        endif
 
 class ExternalTool(BaseSerializedModel):
     name = models.TextField()

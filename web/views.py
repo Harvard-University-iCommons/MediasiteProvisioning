@@ -176,7 +176,7 @@ def provision(request):
                 # reach back into Canvas and create a module and module items if they do not exist
                 canvas_mediasite_module_item = canvas_api.create_mediasite_app_external_link(
                     course_id=course.id,
-                    course_sis_id=course.sis_course_id,
+                    course_term=course.term.name,
                     url=course_catalog.CatalogUrl,
                     consumer_key=oath_consumer_key,
                     shared_secret=shared_secret)
