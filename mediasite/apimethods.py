@@ -7,8 +7,8 @@ from requests.auth import HTTPBasicAuth
 
 from .serializer import FolderSerializer, FolderPermissionSerializer, HomeSerializer, CatalogSerializer
 from .serializer import RoleSerializer, ResourcePermissionSerializer, FolderPermissionSerializer
-from .serializer import UserProfileSerializer
-from .apimodels import Home, Folder, Catalog, Role, ResourcePermission, FolderPermission, AccessControl, UserProfile
+from .serializer import UserProfileSerializer, CatalogSettingSerializer
+from .apimodels import Home, Folder, Catalog, CatalogSetting, Role, ResourcePermission, FolderPermission, AccessControl, UserProfile
 
 class MediasiteServiceException(Exception):
     _mediasite_exception = None
@@ -50,7 +50,7 @@ class MediasiteAPI:
     def get_root_folder_id():
         if MediasiteAPI._root_folder_id is None:
             url = 'Home'
-            json =  MediasiteAPI.get_mediasite_request(url)
+            json =  MediasiteAPI.get_mediasite_request_json(url)
             serializer = HomeSerializer(data=json)
             if serializer.is_valid(raise_exception=True):
                 MediasiteAPI._root_folder_id = Home(**serializer.validated_data).RootFolderId
@@ -75,7 +75,7 @@ class MediasiteAPI:
         # longer strings
         encoded_name = urllib.quote_plus(name)
         url = 'Folders?$filter=ParentFolderId eq \'{0}\' and Name eq \'{1}\''.format(parent_folder_id, encoded_name)
-        json = MediasiteAPI.get_mediasite_request(url)
+        json = MediasiteAPI.get_mediasite_request_json(url)
         # the json returned is in the oData format, and there do not appear to be any
         # python libraries that parse oData.  we can extract the 'value' property of the list to get at the
         # underlying json
@@ -86,13 +86,15 @@ class MediasiteAPI:
             errors = serializer.errors
 
     @staticmethod
-    def create_folder(name, parent_folder_id):
+    def create_folder(name, parent_folder_id, is_copy_destination=False, is_shared=False):
         folder_to_create = dict(
             Name=name,
             ParentFolderId=parent_folder_id,
-            IsReviewEditApproveEnabled=False
+            IsReviewEditApproveEnabled=False,
+            IsCopyDestination=is_copy_destination,
+            IsShared=is_shared
         )
-        json = MediasiteAPI.post_mediasite_request('Folders', body=folder_to_create)
+        json = MediasiteAPI.post_mediasite_request_json('Folders', body=folder_to_create)
         serializer = FolderSerializer(data=json)
         if serializer.is_valid(raise_exception=True):
             return Folder(**serializer.validated_data)
@@ -100,13 +102,13 @@ class MediasiteAPI:
             errors = serializer.errors
 
     @staticmethod
-    def get_or_create_folder(name, parent_folder_id, alternate_search_term=None):
+    def get_or_create_folder(name, parent_folder_id, alternate_search_term=None, is_copy_destination=False, is_shared=False):
         if parent_folder_id is None:
             parent_folder_id = MediasiteAPI.get_root_folder_id()
         if parent_folder_id is not None:
             folder = MediasiteAPI.get_folder(name, parent_folder_id, alternate_search_term)
             if not folder:
-                folder = MediasiteAPI.create_folder(name, parent_folder_id)
+                folder = MediasiteAPI.create_folder(name, parent_folder_id, is_copy_destination, is_shared)
         return folder
 
     ######################################################
@@ -132,7 +134,7 @@ class MediasiteAPI:
     def get_catalogs(name):
         encoded_name= urllib.quote_plus(name)
         url = 'Catalogs?$filter=Name eq \'{0}\''.format(encoded_name)
-        json = MediasiteAPI.get_mediasite_request(url)
+        json = MediasiteAPI.get_mediasite_request_json(url)
         serializer = CatalogSerializer(data=json['value'], many=True)
         if serializer.is_valid(raise_exception=True):
             return [Catalog(**attrs) for attrs in serializer.validated_data]
@@ -146,12 +148,25 @@ class MediasiteAPI:
             Name = catalog_name,
             LinkedFolderId = course_folder_id
         )
-        json = MediasiteAPI.post_mediasite_request('Catalogs', catalog_to_create)
+        json = MediasiteAPI.post_mediasite_request_json('Catalogs', catalog_to_create)
         serializer = CatalogSerializer(data=json)
         if serializer.is_valid(raise_exception=True):
             return Catalog(**serializer.validated_data)
         else:
             errors = serializer.errors
+
+    @staticmethod
+    def set_catalog_settings(catalog_id, show_date, show_time, items_per_page):
+        catalog_settings = dict(
+            ShowTablePresentationDate= show_date,
+            ShowTablePresentationTime = show_time,
+            ShowCardPresentationDate = show_date,
+            ShowCardPresentationTime = show_time,
+            PresentationsPerPage = items_per_page,
+            AllowLoginControls = False
+        )
+        url = 'Catalogs(\'{0}\')/Settings'.format(catalog_id)
+        MediasiteAPI.patch_mediasite_request(url, catalog_settings)
 
     ######################################################
     # Permissions
@@ -159,7 +174,7 @@ class MediasiteAPI:
     @staticmethod
     def get_resource_permissions(folder_id):
         url = 'ResourcePermissions(\'{0}\')'.format(folder_id)
-        json = MediasiteAPI.get_mediasite_request(url)
+        json = MediasiteAPI.get_mediasite_request_json(url)
         # the json returned is in the oData format, and there do not appear to be any
         # python libraries that parse oData.  we can extract the 'value' property of the list to get at the
         # underlying json
@@ -177,7 +192,7 @@ class MediasiteAPI:
         folder_permissions_as_dict = folder_permissions.__dict__
         folder_permissions_as_dict['Permissions'] = [ac.__dict__ for ac in folder_permissions.Permissions]
         # this call returns a status object that is probably of no use to us
-        MediasiteAPI.post_mediasite_request(url, body=folder_permissions_as_dict)
+        MediasiteAPI.post_mediasite_request_json(url, body=folder_permissions_as_dict)
 
     @staticmethod
     def get_folder_permissions(folder_id):
@@ -211,7 +226,7 @@ class MediasiteAPI:
             Name = role_name,
             DirectoryEntry = directory_entry
         )
-        json = MediasiteAPI.post_mediasite_request('Roles', body=role_to_create)
+        json = MediasiteAPI.post_mediasite_request_json('Roles', body=role_to_create)
         serializer = RoleSerializer(data=json)
         if serializer.is_valid(raise_exception=True):
             return Role(**serializer.validated_data)
@@ -221,7 +236,7 @@ class MediasiteAPI:
     @staticmethod
     def get_role_by_name(role_name):
         url = 'Roles?$filter=Name eq \'{0}\''.format(role_name)
-        json = MediasiteAPI.get_mediasite_request(url)
+        json = MediasiteAPI.get_mediasite_request_json(url)
         # the json returned is in the oData format, and there do not appear to be any
         # python libraries that parse oData.  we can extract the 'value' property of the list to get at the
         # underlying json
@@ -236,7 +251,7 @@ class MediasiteAPI:
     @staticmethod
     def get_role_by_directory_entry(directory_entry):
         url = 'Roles?$filter=DirectoryEntry eq \'{0}\''.format(directory_entry)
-        json = MediasiteAPI.get_mediasite_request(url)
+        json = MediasiteAPI.get_mediasite_request_json(url)
         # the json returned is in the oData format, and there do not appear to be any
         # python libraries that parse oData.  we can extract the 'value' property of the list to get at the
         # underlying json
@@ -269,8 +284,8 @@ class MediasiteAPI:
     ######################################################
     @staticmethod
     def get_user_by_email_address(email_address):
-        url =  'UserProfiles?$filter=endswith(Email, \'{0}\')'.format(email_address)
-        json = MediasiteAPI.get_mediasite_request(url)
+        url = 'UserProfiles?$filter=endswith(Email, \'{0}\')'.format(email_address)
+        json = MediasiteAPI.get_mediasite_request_json(url)
         # the json returned is in the oData format, and there do not appear to be any
         # python libraries that parse oData.  we can extract the 'value' property of the list to get at the
         # underlying json
@@ -285,7 +300,7 @@ class MediasiteAPI:
     @staticmethod
     def create_user(user):
         url = 'UserProfiles'
-        json = MediasiteAPI.post_mediasite_request(url=url, body=user.__dict__)
+        json = MediasiteAPI.post_mediasite_request_json(url=url, body=user.__dict__)
         serializer = UserProfileSerializer(data=json)
         if serializer.is_valid(raise_exception=True):
             return UserProfile(**serializer.validated_data)
@@ -298,16 +313,24 @@ class MediasiteAPI:
     # Generic API Methods
     ######################################################
     @staticmethod
-    def get_mediasite_request(url):
-        return MediasiteAPI.mediasite_request(url=url, method='GET', body=None)
+    def get_mediasite_request_json(url):
+        return MediasiteAPI.mediasite_request_json(url=url, method='GET', body=None)
 
     @staticmethod
-    def post_mediasite_request(url, body):
-        return MediasiteAPI.mediasite_request(url=url, method='POST', body=body)
+    def post_mediasite_request_json(url, body):
+        return MediasiteAPI.mediasite_request_json(url=url, method='POST', body=body)
 
     @staticmethod
-    def put_mediasite_request(url, body):
-        return MediasiteAPI.mediasite_request(url=url, method='PUT', body=body)
+    def put_mediasite_request_json(url, body):
+        return MediasiteAPI.mediasite_request_json(url=url, method='PUT', body=body)
+
+    @staticmethod
+    def patch_mediasite_request_json(url, body):
+        return MediasiteAPI.mediasite_request_json(url=url, method='PATCH', body=body)
+
+    @staticmethod
+    def patch_mediasite_request(url, body):
+        return MediasiteAPI.mediasite_request(url=url, method='PATCH', body=body)
 
     @staticmethod
     def mediasite_request(url, method, body):
@@ -330,6 +353,12 @@ class MediasiteAPI:
                                     headers=MediasiteAPI.get_mediasite_headers(),
                                     data=json.dumps(body),
                                     verify=MediasiteAPI.is_production())
+            elif method == 'PATCH':
+                r = requests.patch(url=MediasiteAPI.get_mediasite_url(url),
+                                   auth=MediasiteAPI.get_mediasite_auth(),
+                                   headers=MediasiteAPI.get_mediasite_headers(),
+                                   data=json.dumps(body),
+                                   verify=MediasiteAPI.is_production())
             else:
                 r = requests.get(url=MediasiteAPI.get_mediasite_url(url),
                                  auth=MediasiteAPI.get_mediasite_auth(),
@@ -339,7 +368,15 @@ class MediasiteAPI:
         except Exception as e:
             raise MediasiteServiceException(mediasite_exception=e)
 
-        return r.json()
+        return r
+
+    @staticmethod
+    def mediasite_request_json(url, method, body):
+        req = MediasiteAPI.mediasite_request(url, method, body)
+        try:
+            return req.json()
+        except Exception as e:
+            raise MediasiteServiceException(mediasite_exception=e)
 
     @staticmethod
     def get_mediasite_auth():

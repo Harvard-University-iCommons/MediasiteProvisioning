@@ -18,6 +18,14 @@ class Catalog(BaseSerializedModel):
     FriendlyName = models.TextField(null=True, blank=True)
     CatalogUrl = models.TextField()
 
+class CatalogSetting(BaseSerializedModel):
+    PresentationsPerPage = models.IntegerField()
+    ShowCardPresentationDate = models.BooleanField()
+    ShowCardPresentationTime = models.BooleanField()
+    ShowTablePresentationDate = models.BooleanField()
+    ShowTablePresentationTime = models.BooleanField()
+    AllowLoginControls = models.BooleanField()
+
 class Folder(BaseSerializedModel):
     Name = models.TextField()
     Owner = models.TextField()

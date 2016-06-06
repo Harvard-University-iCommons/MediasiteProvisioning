@@ -70,14 +70,21 @@ def provision(request):
         account_id = request.POST['account_id']
 
         account = School.objects.get(canvas_id=account_id)
-        oath_consumer_key = None
-        shared_secret = None
+        oath_consumer_key = settings.OAUTH_CONSUMER_KEY
+        shared_secret = settings.OAUTH_SHARED_SECRET
+        catalog_show_date = False
+        catalog_show_time = False
+        catalog_items_per_page = 100
+
+        if account is not None:
+            catalog_show_date = account.catalog_show_date
+            catalog_show_time = account.catalog_show_time
+            if account.catalog_items_per_page is not None:
+                catalog_items_per_page = account.catalog_items_per_page
+
         if account.consumer_key is not None and account.shared_secret is not None:
             oath_consumer_key = account.consumer_key
             shared_secret = account.shared_secret
-        else:
-            oath_consumer_key = settings.OAUTH_CONSUMER_KEY
-            shared_secret = settings.OAUTH_SHARED_SECRET
 
         if oath_consumer_key is not None and shared_secret is not None:
             # Initialize an instance of the CanvasAPI with a user, to allow the use of credentials
@@ -110,7 +117,9 @@ def provision(request):
                     if term_folder is not None:
                         course_folder = MediasiteAPI.get_or_create_folder(name=course_long_name,
                                                                           parent_folder_id=term_folder.Id,
-                                                                          alternate_search_term=course.sis_course_id)
+                                                                          alternate_search_term=course.sis_course_id,
+                                                                          is_copy_destination=True,
+                                                                          is_shared=True)
 
             if course_folder is not None:
                 # create course catalog
@@ -123,6 +132,8 @@ def provision(request):
                                                                     catalog_name=course_long_name,
                                                                     course_folder_id=course_folder.Id,
                                                                     alternative_search_term=course.course_code)
+                if course_catalog is not None:
+                    MediasiteAPI.set_catalog_settings(course_catalog.Id, catalog_show_date, catalog_show_time, catalog_items_per_page)
 
                 ###################################
                 # Assign permissions

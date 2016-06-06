@@ -7,6 +7,9 @@ class School(models.Model):
     mediasite_root_folder = models.TextField(blank=True, null=True)
     consumer_key = models.TextField(blank=True, null=True)
     shared_secret = models.TextField(blank=True, null=True)
+    catalog_show_date = models.BooleanField(default=False, null=False)
+    catalog_show_time = models.BooleanField(default=False, null=False)
+    catalog_items_per_page = models.IntegerField(blank=100, null=100)
 
 class APIUser(models.Model):
     user = models.OneToOneField(User)
