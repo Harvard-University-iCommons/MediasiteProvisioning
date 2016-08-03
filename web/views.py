@@ -46,13 +46,13 @@ def search(request):
     except CanvasServiceException as ce:
         canvas_exception = ce._canvas_exception
         error = '{0} [{1}]'.format(ce, canvas_exception)
-        log(username=request.user.username, error=error)
-
         if ce.status_code() == 401:
             # if we get a 401 it means, probably, that the access token that the user has
             # is invalid, or the user does not have a token.  we should redirect them to canvas to get a token
             canvas_redirect_url = CanvasAPI.get_canvas_oauth_redirect_url(client_id=request.user.id)
             return redirect(canvas_redirect_url)
+        else:
+            log(username=request.user.username, error=error)
 
     except Exception as e:
         error = e
