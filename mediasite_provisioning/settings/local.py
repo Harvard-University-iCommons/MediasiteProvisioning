@@ -1,18 +1,11 @@
+import logging
+
+from dj_log_config_helper import configure_installed_apps_logger
+
 from .base import *
-from logging.config import dictConfig
 
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
-    }
-}
+DEBUG = True
 
-# Log to console instead of a file when running locally
-LOGGING['handlers']['default'] = {
-    'level': logging.DEBUG,
-    'class': 'logging.StreamHandler',
-    'formatter': 'simple',
-}
+SECRET_KEY = 'en9#zy=gnnmz8blzh_!*jkpmy^ysy)e^01e6of!(xw0)s*h4(z'
 
-dictConfig(LOGGING)
+configure_installed_apps_logger(logging.DEBUG)

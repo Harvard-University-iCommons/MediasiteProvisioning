@@ -46,13 +46,13 @@ def search(request):
     except CanvasServiceException as ce:
         canvas_exception = ce._canvas_exception
         error = '{0} [{1}]'.format(ce, canvas_exception)
-        log(username=request.user.username, error=error)
-
         if ce.status_code() == 401:
             # if we get a 401 it means, probably, that the access token that the user has
             # is invalid, or the user does not have a token.  we should redirect them to canvas to get a token
             canvas_redirect_url = CanvasAPI.get_canvas_oauth_redirect_url(client_id=request.user.id)
             return redirect(canvas_redirect_url)
+        else:
+            log(username=request.user.username, error=error)
 
     except Exception as e:
         error = e
@@ -122,9 +122,9 @@ def provision(request):
                                                                           is_shared=True)
 
             if course_folder is not None:
-                # create course catalog
-                catalog_display_name = '{0}-{1}-{2}-lecture-video'\
-                    .format(mediasite_root_folder, term, course.course_code)
+                # create course catalog, with course instance id to ensure uniqueness
+                catalog_display_name = '{0}-{1}-{2}-{3}-lecture-video'\
+                    .format(mediasite_root_folder, term, course.course_code, course.sis_course_id)
                 # this is needed because a bug in Mediasite allows for the creation of a URL with potentially
                 # dangerous strings in it. we strip out the characters that we know might create that type of URL
                 catalog_display_name = catalog_display_name.translate(None, '<>*%:&\\ ')
