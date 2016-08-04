@@ -12,13 +12,11 @@ https://docs.djangoproject.com/en/1.8/ref/settings/
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 import os
-import logging
+
 from .secure import SECURE_SETTINGS
 
-BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-
-# SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = SECURE_SETTINGS.get('enable_debug', False)
+BASE_DIR = os.path.dirname(
+    os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/1.8/howto/deployment/checklist/
@@ -62,7 +60,6 @@ TEMPLATES = [
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
             ],
-            'debug': DEBUG,
         },
     },
 ]
@@ -82,15 +79,14 @@ USE_L10N = True
 
 USE_TZ = True
 
-ALLOWED_HOSTS = []
-
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/1.8/howto/static-files/
 STATIC_URL = '/static/'
 # Used by 'collectstatic' management command
 STATIC_ROOT = os.path.normpath(os.path.join(BASE_DIR, 'http_static'))
 
-# Determines whether we provision user profiles in Mediasite. Currently false pending IAM discussion
+# Determines whether we provision user profiles in Mediasite. Currently
+# false pending IAM discussion
 CREATE_USER_PROFILES_FOR_TEACHERS = False
 
 # Database
@@ -106,75 +102,46 @@ DATABASES = {
     }
 }
 
-# Logging
-# https://docs.djangoproject.com/en/1.8/topics/logging/#configuring-logging
-_DEFAULT_LOG_LEVEL = SECURE_SETTINGS.get('log_level', logging.DEBUG)
-_LOG_ROOT = SECURE_SETTINGS.get('log_root', '')
+# Sessions
+# https://docs.djangoproject.com/en/1.9/topics/http/sessions/#module-django.contrib.sessions
+
+# Store sessions in default cache defined below
+SESSION_ENGINE = 'django.contrib.sessions.backends.cache'
+# NOTE: This setting only affects the session cookie, not the expiration of the session
+# being stored in the cache.  The session keys will expire according to the value of
+# SESSION_COOKIE_AGE (https://docs.djangoproject.com/en/1.9/ref/settings/#session-cookie-age),
+# which defaults to 2 weeks.
+SESSION_EXPIRE_AT_BROWSER_CLOSE = True
+
+# Cache
+# https://docs.djangoproject.com/en/1.9/ref/settings/#std:setting-CACHES
+
+REDIS_HOST = SECURE_SETTINGS.get('redis_host', '127.0.0.1')
+REDIS_PORT = SECURE_SETTINGS.get('redis_port', 6379)
+
+CACHES = {
+    'default': {
+        'BACKEND': 'redis_cache.RedisCache',
+        'LOCATION': "redis://%s:%s/0" % (REDIS_HOST, REDIS_PORT),
+        'OPTIONS': {
+            'PARSER_CLASS': 'redis.connection.HiredisParser'
+        },
+        'KEY_PREFIX': 'mediasite_provisioning',  # Provide a unique value for shared cache
+        # See following for default timeout (5 minutes as of 1.7):
+        # https://docs.djangoproject.com/en/1.9/ref/settings/#std:setting-CACHES-TIMEOUT
+        'TIMEOUT': SECURE_SETTINGS.get('default_cache_timeout_secs', 300),
+    },
+}
 
 # Turn off default Django logging
 # https://docs.djangoproject.com/en/1.8/topics/logging/#disabling-logging-configuration
 LOGGING_CONFIG = None
-
-LOGGING = {
-    'version': 1,
-    'disable_existing_loggers': False,
-    'formatters': {
-        'verbose': {
-            'format': '%(levelname)s\t%(asctime)s.%(msecs)03dZ\t%(name)s:%(lineno)s\t%(message)s',
-            'datefmt': '%Y-%m-%dT%H:%M:%S'
-        },
-        'simple': {
-            'format': '%(levelname)s\t%(name)s:%(lineno)s\t%(message)s',
-        },
-    },
-    'handlers': {
-        'default': {
-            'class': 'logging.handlers.WatchedFileHandler',
-            'level': _DEFAULT_LOG_LEVEL,
-            'formatter': 'verbose',
-            'filename': os.path.join(_LOG_ROOT, 'django-mediasite_provisioning.log'),
-        },
-    },
-    # This is the default logger for any apps or libraries that use the logger
-    # package, but are not represented in the `loggers` dict below.  A level
-    # must be set and handlers defined.  Setting this logger is equivalent to
-    # setting and empty string logger in the loggers dict below, but the separation
-    # here is a bit more explicit.  See link for more details:
-    # https://docs.python.org/2.7/library/logging.config.html#dictionary-schema-details
-    'root': {
-        'level': logging.WARNING,
-        'handlers': ['default'],
-    },
-    'loggers': {
-        # These loggers will, by default, propagate to the root logger and
-        # use the root logger's level if one has not been set.
-        'canvas': {
-            'level': _DEFAULT_LOG_LEVEL,
-            'handlers': ['default'],
-            'propagate': False,
-        },
-        'mediasite': {
-            'level': _DEFAULT_LOG_LEVEL,
-            'handlers': ['default'],
-            'propagate': False,
-        },
-        'web': {
-            'level': _DEFAULT_LOG_LEVEL,
-            'handlers': ['default'],
-            'propagate': False,
-        },
-    }
-}
-
 
 ###################################################################
 #
 #   Configuration values to be externalized in S3
 #
 ###################################################################
-
-# SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = SECURE_SETTINGS.get('django_secret_key')
 
 MEDIASITE_API_KEY = SECURE_SETTINGS.get('mediasite_api_key')
 MEDIASITE_URL = SECURE_SETTINGS.get('mediasite_url')
