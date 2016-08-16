@@ -256,4 +256,4 @@ def oauth(request):
 
 
 def log(username, error):
-    logger.exception("username %s encountered an error" % username)
+    logger.exception("username %s encountered an error: %s", username, str(error))
