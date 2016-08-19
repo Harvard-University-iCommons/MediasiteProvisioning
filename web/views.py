@@ -107,6 +107,10 @@ def provision(request):
             course_long_name = "({0}) {1} {2} ({3})"\
                 .format(term, course.course_code, course.name, course.sis_course_id)
 
+            logger.info(
+                "provisioning course with sis id {} and long name {}".format(
+                    course.sis_course_id, course_long_name))
+
             # create the Mediasite folder structure
             course_folder = None
             root_folder = MediasiteAPI.get_or_create_folder(name=mediasite_root_folder, parent_folder_id=None)

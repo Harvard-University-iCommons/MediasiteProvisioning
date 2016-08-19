@@ -2,6 +2,8 @@ import requests
 import json
 import uuid
 import urllib
+import logging
+
 from django.conf import settings
 from requests.auth import HTTPBasicAuth
 
@@ -9,6 +11,10 @@ from .serializer import FolderSerializer, FolderPermissionSerializer, HomeSerial
 from .serializer import RoleSerializer, ResourcePermissionSerializer, FolderPermissionSerializer
 from .serializer import UserProfileSerializer, CatalogSettingSerializer
 from .apimodels import Home, Folder, Catalog, CatalogSetting, Role, ResourcePermission, FolderPermission, AccessControl, UserProfile
+from .utils import odata_encode_str
+
+logger = logging.getLogger(__name__)
+
 
 class MediasiteServiceException(Exception):
     _mediasite_exception = None
@@ -73,9 +79,10 @@ class MediasiteAPI:
             parent_folder_id = MediasiteAPI.get_root_folder_id()
         # we only search on the first 40 characters of the folder name because the API does not seem able to process
         # longer strings
-        encoded_name = urllib.quote_plus(name)
-        url = 'Folders?$filter=ParentFolderId eq \'{0}\' and Name eq \'{1}\''.format(parent_folder_id, encoded_name)
-        json = MediasiteAPI.get_mediasite_request_json(url)
+        encoded_name = odata_encode_str(name)
+        url = 'Folders'
+        params='$filter=ParentFolderId eq \'{0}\' and Name eq \'{1}\''.format(parent_folder_id, encoded_name)
+        json = MediasiteAPI.get_mediasite_request_json(url, params=params)
         # the json returned is in the oData format, and there do not appear to be any
         # python libraries that parse oData.  we can extract the 'value' property of the list to get at the
         # underlying json
@@ -132,9 +139,10 @@ class MediasiteAPI:
 
     @staticmethod
     def get_catalogs(name):
-        encoded_name= urllib.quote_plus(name)
-        url = 'Catalogs?$filter=Name eq \'{0}\''.format(encoded_name)
-        json = MediasiteAPI.get_mediasite_request_json(url)
+        url = 'Catalogs'
+        encoded_name = odata_encode_str(name)
+        params='$filter=Name eq \'{0}\''.format(encoded_name)
+        json = MediasiteAPI.get_mediasite_request_json(url, params=params)
         serializer = CatalogSerializer(data=json['value'], many=True)
         if serializer.is_valid(raise_exception=True):
             return [Catalog(**attrs) for attrs in serializer.validated_data]
@@ -235,8 +243,10 @@ class MediasiteAPI:
 
     @staticmethod
     def get_role_by_name(role_name):
-        url = 'Roles?$filter=Name eq \'{0}\''.format(role_name)
-        json = MediasiteAPI.get_mediasite_request_json(url)
+        url = 'Roles'
+        encoded_name = odata_encode_str(role_name)
+        params = '$filter=Name eq \'{0}\''.format(encoded_name)
+        json = MediasiteAPI.get_mediasite_request_json(url, params=params)
         # the json returned is in the oData format, and there do not appear to be any
         # python libraries that parse oData.  we can extract the 'value' property of the list to get at the
         # underlying json
@@ -250,8 +260,10 @@ class MediasiteAPI:
 
     @staticmethod
     def get_role_by_directory_entry(directory_entry):
-        url = 'Roles?$filter=DirectoryEntry eq \'{0}\''.format(directory_entry)
-        json = MediasiteAPI.get_mediasite_request_json(url)
+        url = 'Roles'
+        encoded_dir_entry = odata_encode_str(directory_entry)
+        params='$filter=DirectoryEntry eq \'{0}\''.format(encoded_dir_entry)
+        json = MediasiteAPI.get_mediasite_request_json(url, params=params)
         # the json returned is in the oData format, and there do not appear to be any
         # python libraries that parse oData.  we can extract the 'value' property of the list to get at the
         # underlying json
@@ -284,8 +296,10 @@ class MediasiteAPI:
     ######################################################
     @staticmethod
     def get_user_by_email_address(email_address):
-        url = 'UserProfiles?$filter=endswith(Email, \'{0}\')'.format(email_address)
-        json = MediasiteAPI.get_mediasite_request_json(url)
+        url = 'UserProfiles'
+        encoded_email = odata_encode_str(email_address)
+        params='$filter=endswith(Email, \'{0}\')'.format(encoded_email)
+        json = MediasiteAPI.get_mediasite_request_json(url, params=params)
         # the json returned is in the oData format, and there do not appear to be any
         # python libraries that parse oData.  we can extract the 'value' property of the list to get at the
         # underlying json
@@ -313,8 +327,8 @@ class MediasiteAPI:
     # Generic API Methods
     ######################################################
     @staticmethod
-    def get_mediasite_request_json(url):
-        return MediasiteAPI.mediasite_request_json(url=url, method='GET', body=None)
+    def get_mediasite_request_json(url, params=None):
+        return MediasiteAPI.mediasite_request_json(url=url, method='GET', body=None, params=params)
 
     @staticmethod
     def post_mediasite_request_json(url, body):
@@ -333,46 +347,46 @@ class MediasiteAPI:
         return MediasiteAPI.mediasite_request(url=url, method='PATCH', body=body)
 
     @staticmethod
-    def mediasite_request(url, method, body):
+    def mediasite_request(url, method, body, params=None):
         try:
             if method == 'POST':
                 r = requests.post(url=MediasiteAPI.get_mediasite_url(url),
                                   auth=MediasiteAPI.get_mediasite_auth(),
                                   headers=MediasiteAPI.get_mediasite_headers(),
-                                  data=json.dumps(body),
-                                  verify=MediasiteAPI.is_production())
+                                  data=json.dumps(body))
             elif method == 'PUT':
                 r = requests.put(url=MediasiteAPI.get_mediasite_url(url),
                                  auth=MediasiteAPI.get_mediasite_auth(),
                                  headers=MediasiteAPI.get_mediasite_headers(),
-                                 data=json.dumps(body),
-                                 verify=MediasiteAPI.is_production())
+                                 data=json.dumps(body))
             elif method == 'DELETE':
                 r = requests.delete(url=MediasiteAPI.get_mediasite_url(url),
                                     auth=MediasiteAPI.get_mediasite_auth(),
                                     headers=MediasiteAPI.get_mediasite_headers(),
-                                    data=json.dumps(body),
-                                    verify=MediasiteAPI.is_production())
+                                    data=json.dumps(body))
             elif method == 'PATCH':
                 r = requests.patch(url=MediasiteAPI.get_mediasite_url(url),
                                    auth=MediasiteAPI.get_mediasite_auth(),
                                    headers=MediasiteAPI.get_mediasite_headers(),
-                                   data=json.dumps(body),
-                                   verify=MediasiteAPI.is_production())
+                                   data=json.dumps(body))
             else:
                 r = requests.get(url=MediasiteAPI.get_mediasite_url(url),
+                                 params=params,
                                  auth=MediasiteAPI.get_mediasite_auth(),
-                                 headers=MediasiteAPI.get_mediasite_headers(),
-                                 verify=MediasiteAPI.is_production())
+                                 headers=MediasiteAPI.get_mediasite_headers())
             r.raise_for_status()
         except Exception as e:
+            logger.info("tried to make a {} call to {} via requests".format(
+                r.request.method, r.request.url))
             raise MediasiteServiceException(mediasite_exception=e)
 
+        logger.debug("made a {} call to {} via requests".format(
+            r.request.method, r.request.url))
         return r
 
     @staticmethod
-    def mediasite_request_json(url, method, body):
-        req = MediasiteAPI.mediasite_request(url, method, body)
+    def mediasite_request_json(url, method, body, params=None):
+        req = MediasiteAPI.mediasite_request(url, method, body, params)
         try:
             return req.json()
         except Exception as e:
@@ -395,4 +409,3 @@ class MediasiteAPI:
     def is_production():
         return False
         # return settings.DEBUG == False
-
