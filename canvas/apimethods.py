@@ -2,6 +2,8 @@ import requests
 import enum
 import json
 import sys
+import logging
+
 from django.conf import settings
 from django.core.exceptions import ObjectDoesNotExist
 from operator import itemgetter, attrgetter, methodcaller
@@ -9,6 +11,9 @@ from rest_framework.exceptions import APIException
 from .serializer import AccountSerializer, CourseSerializer, EnrollmentSerializer, UserSerializer, ModuleSerializer
 from .serializer import ModuleItemSerializer, ExternalToolSerializer, LinkSerializer
 from .apimodels import Course, Module, ModuleItem, Account, User, Enrollment, ExternalTool, SearchResults, Term, Link
+
+logger = logging.getLogger(__name__)
+
 
 class CanvasServiceException(Exception):
     _canvas_exception = None
@@ -342,8 +347,12 @@ class CanvasAPI:
                               data=json.dumps(data),
                               headers=self.get_canvas_headers())
             r.raise_for_status()
+            logger.debug("made a {} call to {} via requests".format(
+                r.request.method, r.request.url))
             return r
         except Exception as e:
+            logger.info("tried to make a {} call to {} via requests with data {}".format(
+                r.request.method, r.request.url, r.request.body))
             raise CanvasServiceException(canvas_exception=e)
 
     @staticmethod
