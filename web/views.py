@@ -82,11 +82,11 @@ def provision(request):
             if account.catalog_items_per_page is not None:
                 catalog_items_per_page = account.catalog_items_per_page
 
-        if account.consumer_key is not None and account.shared_secret is not None:
+        if account.consumer_key and account.shared_secret:
             oath_consumer_key = account.consumer_key
             shared_secret = account.shared_secret
 
-        if oath_consumer_key is not None and shared_secret is not None:
+        if oath_consumer_key and shared_secret:
             # Initialize an instance of the CanvasAPI with a user, to allow the use of credentials
             # for communication with Canvas
             canvas_api=CanvasAPI(user=request.user)
@@ -108,8 +108,8 @@ def provision(request):
                 .format(term, course.course_code, course.name, course.sis_course_id)
 
             logger.info(
-                "provisioning course with sis id {} and long name {}".format(
-                    course.sis_course_id, course_long_name))
+                "{} is attempting to provision course with sis id {} and long name {}".format(
+                    request.user.username, course.sis_course_id, course_long_name))
 
             # create the Mediasite folder structure
             course_folder = None

@@ -139,7 +139,7 @@ class CanvasAPI:
             external_tools = [ExternalTool(**attrs) for attrs in serializer.validated_data]
             return [i for i in external_tools if CanvasAPI.MEDIASITE_EXTERNAL_TOOL_NAME in i.name ]
 
-    def create_mediasite_app_external_link(self, course_id, course_term, consumer_key, shared_secret, url):
+    def create_mediasite_app_external_link(self, course_id, course_term, url, consumer_key, shared_secret):
         mediasite_link_name = CanvasAPI.MEDIASITE_LINK_NAME
 
         # if there is already a external link then we want to distinguish this link in the navigation bar
