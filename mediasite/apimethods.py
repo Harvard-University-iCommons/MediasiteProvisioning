@@ -3,6 +3,7 @@ import json
 import uuid
 import urllib
 import logging
+import time
 
 from django.conf import settings
 from requests.auth import HTTPBasicAuth
@@ -380,13 +381,17 @@ class MediasiteAPI:
                 r.request.method, r.request.url))
             raise MediasiteServiceException(mediasite_exception=e)
 
-        logger.debug("made a {} call to {} via requests".format(
-            r.request.method, r.request.url))
         return r
 
     @staticmethod
     def mediasite_request_json(url, method, body, params=None):
+        start_time = time.time()
         req = MediasiteAPI.mediasite_request(url, method, body, params)
+        elapsed_secs = time.time() - start_time
+        logger.debug("made a {} call to {} via requests in {:.3f}s".format(
+            req.request.method,
+            req.request.url,
+            elapsed_secs))
         try:
             return req.json()
         except Exception as e:
