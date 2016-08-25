@@ -67,11 +67,13 @@ class MediasiteAPI:
     def get_folder(name, parent_folder_id, alternative_search_term=None):
         folders = MediasiteAPI.get_folders(name, parent_folder_id)
         folder = next((f for f in folders if f.Name == name), None)
+        # 8/25/16 JDB: NOTE - The folder searches are exact match, so using an alternative of the sis id seems
+        # wasteful and a potential problem for legacy naming schemes.  Commenting this out for now.
         # the folder name can be too long for the API to parse, so we can use an alternate unique search term
         # ideally the course sis id
-        if not folder and alternative_search_term is not None:
-            folders = MediasiteAPI.get_folders(alternative_search_term, parent_folder_id)
-            folder = next((f for f in folders if f.Name == name), None)
+        # if not folder and alternative_search_term is not None:
+        #     folders = MediasiteAPI.get_folders(alternative_search_term, parent_folder_id)
+        #     folder = next((f for f in folders if f.Name == name), None)
         return folder
 
     @staticmethod
@@ -133,9 +135,12 @@ class MediasiteAPI:
     def get_catalog(name, course_folder_id, alternative_search_term):
         catalogs = MediasiteAPI.get_catalogs(name)
         catalog = next((c for c in catalogs if c.LinkedFolderId == course_folder_id), None)
-        if not catalog and len(name) > 40:
-            catalogs = MediasiteAPI.get_catalogs(alternative_search_term)
-            catalog = next((c for c in catalogs if c.LinkedFolderId == course_folder_id and c.Name == name), None)
+        # 8/25/16 JDB: NOTE - commenting this out as I don't think we need to search on an alternative name or
+        # even match on name at all.  There should only be one catalog linked to a course folder in this
+        # provisioning setup.
+        # if not catalog and len(name) > 40:
+        #     catalogs = MediasiteAPI.get_catalogs(alternative_search_term)
+        #     catalog = next((c for c in catalogs if c.LinkedFolderId == course_folder_id and c.Name == name), None)
         return catalog
 
     @staticmethod
