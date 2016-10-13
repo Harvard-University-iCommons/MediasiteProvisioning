@@ -219,7 +219,7 @@ def provision(request):
                 canvas_mediasite_module_item = canvas_api.create_mediasite_app_external_link(
                     course_id=course.id,
                     course_term=course.term.name,
-                    url=course_catalog.CatalogUrl,
+                    url=settings.MEDIASITE_LTI_LAUNCH_URL,
                     consumer_key=oath_consumer_key,
                     shared_secret=shared_secret)
 

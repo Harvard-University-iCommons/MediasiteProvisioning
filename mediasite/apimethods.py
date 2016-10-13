@@ -519,7 +519,7 @@ class MediasiteAPI:
 
     @staticmethod
     def get_mediasite_url(partial_url):
-        return settings.MEDIASITE_URL.format(partial_url)
+        return settings.MEDIASITE_API_URL.format(partial_url)
 
     @staticmethod
     def is_production():

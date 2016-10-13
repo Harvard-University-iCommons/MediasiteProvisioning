@@ -144,7 +144,11 @@ LOGGING_CONFIG = None
 ###################################################################
 
 MEDIASITE_API_KEY = SECURE_SETTINGS.get('mediasite_api_key')
-MEDIASITE_URL = SECURE_SETTINGS.get('mediasite_url')
+MEDIASITE_BASE_URL = SECURE_SETTINGS.get('mediasite_base_url')
+MEDIASITE_API_PATH = SECURE_SETTINGS.get('mediasite_api_path')
+MEDIASITE_API_URL = MEDIASITE_BASE_URL + MEDIASITE_API_PATH
+MEDIASITE_LTI_LAUNCH_PATH = SECURE_SETTINGS.get('mediasite_lti_launch_path')
+MEDIASITE_LTI_LAUNCH_URL = MEDIASITE_BASE_URL + MEDIASITE_LTI_LAUNCH_PATH
 CANVAS_URL = SECURE_SETTINGS.get('canvas_url')
 CANVAS_CLIENT_ID = SECURE_SETTINGS.get('canvas_client_id')
 CANVAS_CLIENT_SECRET = SECURE_SETTINGS.get('canvas_client_secret')
