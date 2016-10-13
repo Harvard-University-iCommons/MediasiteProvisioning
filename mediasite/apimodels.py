@@ -43,6 +43,11 @@ class FolderPermission(BaseSerializedModel):
     Owner = models.TextField()
     Permissions = list()
 
+class Module(BaseSerializedModel):
+    ModuleId = models.TextField()
+    Name = models.TextField()
+    Associations = list()
+
 class ResourcePermission(BaseSerializedModel):
     Owner = models.TextField()
     InheritPermissions = models.BooleanField()
