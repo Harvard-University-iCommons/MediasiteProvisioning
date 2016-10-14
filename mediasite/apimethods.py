@@ -8,10 +8,24 @@ import time
 from django.conf import settings
 from requests.auth import HTTPBasicAuth
 
-from .serializer import FolderSerializer, FolderPermissionSerializer, HomeSerializer, CatalogSerializer
-from .serializer import RoleSerializer, ResourcePermissionSerializer, FolderPermissionSerializer
-from .serializer import UserProfileSerializer, CatalogSettingSerializer
-from .apimodels import Home, Folder, Catalog, CatalogSetting, Role, ResourcePermission, FolderPermission, AccessControl, UserProfile
+from .serializer import (
+    CatalogSerializer,
+    FolderSerializer,
+    HomeSerializer,
+    ModuleSerializer,
+    ResourcePermissionSerializer,
+    RoleSerializer,
+    UserProfileSerializer, )
+from .apimodels import (
+    AccessControl,
+    Catalog,
+    Folder,
+    FolderPermission,
+    Home,
+    Module,
+    ResourcePermission,
+    Role,
+    UserProfile, )
 from .utils import odata_encode_str
 
 logger = logging.getLogger(__name__)
@@ -181,6 +195,99 @@ class MediasiteAPI:
         )
         url = 'Catalogs(\'{0}\')/Settings'.format(catalog_id)
         MediasiteAPI.patch_mediasite_request(url, catalog_settings)
+
+    ######################################################
+    # Modules
+    ######################################################
+    @staticmethod
+    def get_or_create_module(module_id, name, catalog_mediasite_id=None):
+        module = MediasiteAPI.get_module(module_id=module_id)
+        if module is None:
+            module = MediasiteAPI.create_module(
+                module_id, name, catalog_mediasite_id)
+        return module
+
+    @staticmethod
+    def create_module(module_id, name, catalog_mediasite_id=None):
+        module_to_create = dict(ModuleId=module_id, Name=name)
+        if catalog_mediasite_id:
+            # immediately associate the module with a catalog
+            module_to_create['Associations'] = [catalog_mediasite_id]
+        module_json = MediasiteAPI.post_mediasite_request_json('Modules',
+                                                               module_to_create)
+        serializer = ModuleSerializer(data=module_json)
+        if serializer.is_valid(raise_exception=True):
+            return Module(**serializer.validated_data)
+
+    @staticmethod
+    def get_module(mediasite_id=None, module_id=None):
+        """
+        Gets a module by either its Id or ModuleId properties.
+        :param mediasite_id: The module's Id property.
+        :param module_id: The module's ModuleId property.
+        :return: a mediasite.apimodels.Module if found; None if no object found;
+         throws an error if multiple objects found.
+        """
+        if not(bool(mediasite_id) ^ bool(module_id)):  # xor
+            raise ValueError('get_module() requires one identifier')
+        return MediasiteAPI.get_module_by_mediasite_id(mediasite_id) \
+            if mediasite_id else MediasiteAPI.get_module_by_module_id(module_id)
+
+    @staticmethod
+    def get_module_by_mediasite_id(mediasite_id):
+        """
+        Finds a module by its Id.
+        :return: a mediasite.apimodels.Module if found; None if no object found.
+        """
+        url = "Modules('{}')".format(mediasite_id)
+        try:
+            module_json = MediasiteAPI.get_mediasite_request_json(url)
+        except MediasiteServiceException as mse:
+            if mse.status_code() == requests.codes.not_found:
+                return None
+            raise mse
+        serializer = ModuleSerializer(data=module_json)
+        if serializer.is_valid(raise_exception=True):
+            return Module(**serializer.validated_data)
+
+    @staticmethod
+    def get_module_by_module_id(module_id):
+        """
+        Finds a module by its ModuleId. Expects only one module to match.
+        :return: a mediasite.apimodels.Module if found; None if no object found;
+         throws an error if multiple objects found.
+        """
+        url = 'Modules'
+        encoded_module_id = odata_encode_str(module_id)
+        # this is equivalent to a 'contains' search, as this is a
+        # mediasite-search-backed filter endpoint
+        params = "$filter=ModuleId eq '{0}'".format(encoded_module_id)
+        module_json = MediasiteAPI.get_mediasite_request_json(url, params=params)
+        if module_json['odata.count'] == "0":
+            return None
+        if module_json['odata.count'] != "1":
+            raise ValueError(('get_module_by_module_id() found more than one '
+                              'Module for filter params {}').format(params))
+        serializer = ModuleSerializer(data=module_json['value'], many=True)
+        if serializer.is_valid(raise_exception=True):
+            return Module(**serializer.validated_data[0])
+
+    @staticmethod
+    def add_module_association_by_mediasite_id(module_mediasite_id,
+                                               associated_mediasite_id):
+        """
+        Creates an association between a module and a catalog. Note: if the
+        association already exists, no error is returned, and the association
+        is retained.
+        :param module_mediasite_id: The Module's Id property.
+        :param associated_mediasite_id: The Catalog's Id property.
+        :return: the requests.Response of the mediasite API call (status code
+         will be 204 No Content if the association was created or already
+         existed).
+        """
+        url = "Modules('{}')/AddAssociation".format(module_mediasite_id)
+        associated_object = dict(MediasiteId=associated_mediasite_id)
+        return MediasiteAPI.mediasite_request(url, 'POST', associated_object)
 
     ######################################################
     # Permissions
@@ -354,6 +461,7 @@ class MediasiteAPI:
 
     @staticmethod
     def mediasite_request(url, method, body, params=None):
+        start_time = time.time()
         try:
             if method == 'POST':
                 r = requests.post(url=MediasiteAPI.get_mediasite_url(url),
@@ -382,21 +490,19 @@ class MediasiteAPI:
                                  headers=MediasiteAPI.get_mediasite_headers())
             r.raise_for_status()
         except Exception as e:
-            logger.info("tried to make a {} call to {} via requests".format(
-                r.request.method, r.request.url))
+            elapsed_secs = time.time() - start_time
+            logger.info("tried to make a {} call to {} via requests in "
+                        "{:.3f}s".format(method, url, elapsed_secs))
             raise MediasiteServiceException(mediasite_exception=e)
 
+        elapsed_secs = time.time() - start_time
+        logger.debug("made a {} call to {} via requests in {:.3f}s".format(
+            r.request.method, r.request.url, elapsed_secs))
         return r
 
     @staticmethod
     def mediasite_request_json(url, method, body, params=None):
-        start_time = time.time()
         req = MediasiteAPI.mediasite_request(url, method, body, params)
-        elapsed_secs = time.time() - start_time
-        logger.debug("made a {} call to {} via requests in {:.3f}s".format(
-            req.request.method,
-            req.request.url,
-            elapsed_secs))
         try:
             return req.json()
         except Exception as e:

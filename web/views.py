@@ -139,6 +139,21 @@ def provision(request):
                 if course_catalog is not None:
                     MediasiteAPI.set_catalog_settings(course_catalog.Id, catalog_show_date, catalog_show_time, catalog_items_per_page)
 
+                    # create Mediasite module if it doesn't exist
+                    course_module = MediasiteAPI.get_or_create_module(
+                        course.sis_course_id,
+                        catalog_display_name,
+                        catalog_mediasite_id=course_catalog.Id)
+
+                    # associate the module with the catalog
+                    existing_association = next(
+                        (a for a in course_module.Associations
+                         if course_catalog.Id in a),
+                        None)
+                    if existing_association is None:
+                        MediasiteAPI.add_module_association_by_mediasite_id(
+                            course_module.Id, course_catalog.Id)
+
                 ###################################
                 # Assign permissions
                 ###################################
