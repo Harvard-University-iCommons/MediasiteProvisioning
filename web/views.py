@@ -152,7 +152,7 @@ def provision(request):
                     folder_permissions, course_role, MediasiteAPI.VIEW_ONLY_PERMISSION_FLAG)
 
                 # create Instructor role if it does not exist
-                directory_entry = "{0}@{1}".format("urn:lti:instrole:ims/lis/Instructor:{0}".format(course.sis_course_id), oath_consumer_key)
+                directory_entry = "{0}@{1}".format("urn:lti:role:ims/lis/Instructor:{0}".format(course.sis_course_id), oath_consumer_key)
                 course_role = MediasiteAPI.get_or_create_role(role_name="{0} [Instructor]".format(course_long_name), directory_entry=directory_entry)
                 folder_permissions = MediasiteAPI.update_folder_permissions(
                     folder_permissions, course_role, MediasiteAPI.READ_WRITE_PERMISSION_FLAG)
