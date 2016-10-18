@@ -54,6 +54,7 @@ class MediasiteServiceException(Exception):
                     pass
                 return error
 
+
 class MediasiteAPI:
     VIEW_ONLY_PERMISSION_FLAG = 4
     READ_ONLY_PERMISSION_FLAG = 5
@@ -71,18 +72,17 @@ class MediasiteAPI:
     def get_root_folder_id():
         if MediasiteAPI._root_folder_id is None:
             url = 'Home'
-            json =  MediasiteAPI.get_mediasite_request_json(url)
+            json = MediasiteAPI.get_mediasite_request_json(url)
             serializer = HomeSerializer(data=json)
             if serializer.is_valid(raise_exception=True):
                 MediasiteAPI._root_folder_id = Home(**serializer.validated_data).RootFolderId
         return MediasiteAPI._root_folder_id
 
     @staticmethod
-    def get_folder(name, parent_folder_id, alternative_search_term=None):
-        # Search on the name being passed in, unless an alternative is provided
-        search_term = name
-        if alternative_search_term is not None:
-            search_term = alternative_search_term
+    def get_folder(name, parent_folder_id, search_term=None):
+        # Search on the name being passed in, unless a search_term is provided
+        if search_term is None:
+            search_term = name
 
         folders = MediasiteAPI.get_folders(search_term, parent_folder_id)
         folder = next((f for f in folders if f.Name == name), None)
@@ -130,11 +130,11 @@ class MediasiteAPI:
             errors = serializer.errors
 
     @staticmethod
-    def get_or_create_folder(name, parent_folder_id, alternate_search_term=None, is_copy_destination=False, is_shared=False):
+    def get_or_create_folder(name, parent_folder_id, search_term=None, is_copy_destination=False, is_shared=False):
         if parent_folder_id is None:
             parent_folder_id = MediasiteAPI.get_root_folder_id()
         if parent_folder_id is not None:
-            folder = MediasiteAPI.get_folder(name, parent_folder_id, alternate_search_term)
+            folder = MediasiteAPI.get_folder(name, parent_folder_id, search_term)
             if not folder:
                 folder = MediasiteAPI.create_folder(name, parent_folder_id, is_copy_destination, is_shared)
         return folder
@@ -143,20 +143,19 @@ class MediasiteAPI:
     # Catalogs
     ######################################################
     @staticmethod
-    def get_or_create_catalog(friendly_name, catalog_name, course_folder_id, alternative_search_term=None):
-        catalog = MediasiteAPI.get_catalog(catalog_name, course_folder_id, alternative_search_term)
+    def get_or_create_catalog(friendly_name, catalog_name, course_folder_id, search_term=None):
+        catalog = MediasiteAPI.get_catalog(catalog_name, course_folder_id, search_term)
         if catalog is None:
             catalog = MediasiteAPI.create_catalog(friendly_name, catalog_name, course_folder_id)
         return catalog
 
     @staticmethod
-    def get_catalog(name, course_folder_id, alternative_search_term=None):
+    def get_catalog(name, course_folder_id, search_term=None):
         """ See oDAta note above in `get_folders` method """
 
-        # Search on the name being passed in, unless an alternative is provided
-        search_term = name
-        if alternative_search_term is not None:
-            search_term = alternative_search_term
+        # Search on the name being passed in, unless a search_term is provided
+        if search_term is None:
+            search_term = name
 
         catalogs = MediasiteAPI.get_catalogs(search_term)
         catalog = next((c for c in catalogs if c.LinkedFolderId == course_folder_id), None)

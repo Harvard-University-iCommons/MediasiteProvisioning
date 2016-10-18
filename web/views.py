@@ -121,7 +121,7 @@ def provision(request):
                     if term_folder is not None:
                         course_folder = MediasiteAPI.get_or_create_folder(name=course_long_name,
                                                                           parent_folder_id=term_folder.Id,
-                                                                          alternate_search_term=course.sis_course_id,
+                                                                          search_term=course.sis_course_id,
                                                                           is_copy_destination=True,
                                                                           is_shared=True)
 
@@ -135,7 +135,7 @@ def provision(request):
                 course_catalog = MediasiteAPI.get_or_create_catalog(friendly_name=catalog_display_name,
                                                                     catalog_name=course_long_name,
                                                                     course_folder_id=course_folder.Id,
-                                                                    alternative_search_term=course.course_code)
+                                                                    search_term=course.sis_course_id)
                 if course_catalog is not None:
                     MediasiteAPI.set_catalog_settings(course_catalog.Id, catalog_show_date, catalog_show_time, catalog_items_per_page)
 
