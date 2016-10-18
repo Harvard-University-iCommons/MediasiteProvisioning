@@ -1,16 +1,34 @@
-import requests
+from __future__ import unicode_literals
+
 import enum
 import json
-import sys
 import logging
+from operator import attrgetter
+
 
 from django.conf import settings
 from django.core.exceptions import ObjectDoesNotExist
-from operator import itemgetter, attrgetter, methodcaller
-from rest_framework.exceptions import APIException
-from .serializer import AccountSerializer, CourseSerializer, EnrollmentSerializer, UserSerializer, ModuleSerializer
-from .serializer import ModuleItemSerializer, ExternalToolSerializer, LinkSerializer
-from .apimodels import Course, Module, ModuleItem, Account, User, Enrollment, ExternalTool, SearchResults, Term, Link
+import requests
+
+from .apimodels import (
+    Account,
+    Course,
+    Enrollment,
+    ExternalTool,
+    Link,
+    Module,
+    ModuleItem,
+    SearchResults,
+    User)
+from .serializer import (
+    AccountSerializer,
+    CourseSerializer,
+    EnrollmentSerializer,
+    ExternalToolSerializer,
+    LinkSerializer,
+    ModuleItemSerializer,
+    ModuleSerializer,
+    UserSerializer)
 
 logger = logging.getLogger(__name__)
 

@@ -1,21 +1,14 @@
-import requests
+from __future__ import unicode_literals
+
 import json
-import uuid
-import urllib
 import logging
 import time
+import uuid
 
 from django.conf import settings
+import requests
 from requests.auth import HTTPBasicAuth
 
-from .serializer import (
-    CatalogSerializer,
-    FolderSerializer,
-    HomeSerializer,
-    ModuleSerializer,
-    ResourcePermissionSerializer,
-    RoleSerializer,
-    UserProfileSerializer, )
 from .apimodels import (
     AccessControl,
     Catalog,
@@ -26,6 +19,14 @@ from .apimodels import (
     ResourcePermission,
     Role,
     UserProfile, )
+from .serializer import (
+    CatalogSerializer,
+    FolderSerializer,
+    HomeSerializer,
+    ModuleSerializer,
+    ResourcePermissionSerializer,
+    RoleSerializer,
+    UserProfileSerializer, )
 from .utils import odata_encode_str
 
 logger = logging.getLogger(__name__)
