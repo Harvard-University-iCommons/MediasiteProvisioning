@@ -37,7 +37,7 @@ class MediasiteServiceException(Exception):
     def __init__(self, mediasite_exception,
                  message='Error communicating with Mediasite.  Please note this error and contact support.'):
         super(MediasiteServiceException, self).__init__(message)
-        self._mediasite_exception=mediasite_exception
+        self._mediasite_exception = mediasite_exception
 
     def status_code(self):
         if self._mediasite_exception:
@@ -79,26 +79,30 @@ class MediasiteAPI:
 
     @staticmethod
     def get_folder(name, parent_folder_id, alternative_search_term=None):
-        folders = MediasiteAPI.get_folders(name, parent_folder_id)
+        # Search on the name being passed in, unless an alternative is provided
+        search_term = name
+        if alternative_search_term is not None:
+            search_term = alternative_search_term
+
+        folders = MediasiteAPI.get_folders(search_term, parent_folder_id)
         folder = next((f for f in folders if f.Name == name), None)
-        # 8/25/16 JDB: NOTE - The folder searches are exact match, so using an alternative of the sis id seems
-        # wasteful and a potential problem for legacy naming schemes.  Commenting this out for now.
-        # the folder name can be too long for the API to parse, so we can use an alternate unique search term
-        # ideally the course sis id
-        # if not folder and alternative_search_term is not None:
-        #     folders = MediasiteAPI.get_folders(alternative_search_term, parent_folder_id)
-        #     folder = next((f for f in folders if f.Name == name), None)
         return folder
 
     @staticmethod
     def get_folders(name, parent_folder_id):
+        """ The mediasite API doesn't respect the oData "eq" filter as an exact match.  Rather, it appears from testing that
+        it behaves more like a "contains".  In addition, while the oData docs desribe "eq" as being case sensitive, it appears
+        to be case insensitive in practice with Mediasite.  There is also some weird behavior when matching common words like
+        "The" and "And" - I've observed that these words can yield no results when left as camel cased, but work fine (or are
+        ignored) when lowercased. """
+
         if parent_folder_id is None:
             parent_folder_id = MediasiteAPI.get_root_folder_id()
         # we only search on the first 40 characters of the folder name because the API does not seem able to process
         # longer strings
         encoded_name = odata_encode_str(name)
         url = 'Folders'
-        params='$filter=ParentFolderId eq \'{0}\' and Name eq \'{1}\''.format(parent_folder_id, encoded_name)
+        params = '$filter=ParentFolderId eq \'{0}\' and Name eq \'{1}\''.format(parent_folder_id, encoded_name)
         json = MediasiteAPI.get_mediasite_request_json(url, params=params)
         # the json returned is in the oData format, and there do not appear to be any
         # python libraries that parse oData.  we can extract the 'value' property of the list to get at the
@@ -139,29 +143,31 @@ class MediasiteAPI:
     # Catalogs
     ######################################################
     @staticmethod
-    def get_or_create_catalog(friendly_name, catalog_name, course_folder_id, alternative_search_term):
+    def get_or_create_catalog(friendly_name, catalog_name, course_folder_id, alternative_search_term=None):
         catalog = MediasiteAPI.get_catalog(catalog_name, course_folder_id, alternative_search_term)
         if catalog is None:
             catalog = MediasiteAPI.create_catalog(friendly_name, catalog_name, course_folder_id)
         return catalog
 
     @staticmethod
-    def get_catalog(name, course_folder_id, alternative_search_term):
-        catalogs = MediasiteAPI.get_catalogs(name)
+    def get_catalog(name, course_folder_id, alternative_search_term=None):
+        """ See oDAta note above in `get_folders` method """
+
+        # Search on the name being passed in, unless an alternative is provided
+        search_term = name
+        if alternative_search_term is not None:
+            search_term = alternative_search_term
+
+        catalogs = MediasiteAPI.get_catalogs(search_term)
         catalog = next((c for c in catalogs if c.LinkedFolderId == course_folder_id), None)
-        # 8/25/16 JDB: NOTE - commenting this out as I don't think we need to search on an alternative name or
-        # even match on name at all.  There should only be one catalog linked to a course folder in this
-        # provisioning setup.
-        # if not catalog and len(name) > 40:
-        #     catalogs = MediasiteAPI.get_catalogs(alternative_search_term)
-        #     catalog = next((c for c in catalogs if c.LinkedFolderId == course_folder_id and c.Name == name), None)
+
         return catalog
 
     @staticmethod
     def get_catalogs(name):
         url = 'Catalogs'
         encoded_name = odata_encode_str(name)
-        params='$filter=Name eq \'{0}\''.format(encoded_name)
+        params = '$filter=Name eq \'{0}\''.format(encoded_name)
         json = MediasiteAPI.get_mediasite_request_json(url, params=params)
         serializer = CatalogSerializer(data=json['value'], many=True)
         if serializer.is_valid(raise_exception=True):
