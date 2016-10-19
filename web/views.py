@@ -160,6 +160,15 @@ def provision(request):
                 # get existing permissions for course folder
                 folder_permissions = MediasiteAPI.get_folder_permissions(course_folder.Id)
 
+                # NOTE: The following calls to `update_folder_permissions` do
+                # NOT actually call out to the Mediasite API.  Instead, they
+                # build up the `folder_permissions` Python list model.  The
+                # ultimate call to `assign_permissions_to_folder` makes the
+                # API call that passes up the list of permissions to Mediasite.
+                # As a future TBD, we should consider taking the
+                # `update_folder_permission` method out of the `apimethods`
+                # module since it's not actually an API call.
+
                 # create student role if it does not exist, and update (in memory) the permission set for the folder
                 directory_entry = "{0}@{1}".format(course.sis_course_id, oath_consumer_key)
                 course_role = MediasiteAPI.get_or_create_role(role_name=course_long_name, directory_entry=directory_entry)
