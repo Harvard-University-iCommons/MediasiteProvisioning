@@ -114,6 +114,7 @@ class Course(BaseSerializedModel):
                 start_year = int(float(term.name[:4]))
                 return '{0}-{1}'.format(start_year, start_year + 1)
         except:
+            # Return None for poorly formatted terms
             return year
 
 

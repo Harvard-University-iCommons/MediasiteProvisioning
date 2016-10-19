@@ -117,9 +117,9 @@ def provision(request):
             if root_folder is not None:
 
                 if term.lower()== 'ongoing':
-                    # If it's an 'Ongoing' term, do not create a folder for the
-                    # year, move onto the term folder(essentially collapsing the
-                    #  folder structure).(TLT-2856)
+                    # First check for Ongoing terms. For such terms, do not
+                    # create a folder for the year, move onto the term folder
+                    # (essentially collapsing the folder structure).(TLT-2856)
                     term_folder = MediasiteAPI.get_or_create_folder(name=term, parent_folder_id=root_folder.Id)
                 elif year == 'None':
                     #If the year is not set, raise an error
