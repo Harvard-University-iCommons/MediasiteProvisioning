@@ -137,7 +137,7 @@ def provision(request):
             if term_folder is not None:
                 course_folder = MediasiteAPI.get_or_create_folder(name=course_long_name,
                                                                   parent_folder_id=term_folder.Id,
-                                                                  alternate_search_term=course.sis_course_id,
+                                                                  search_term=course.sis_course_id,
                                                                   is_copy_destination=True,
                                                                   is_shared=True)
 
