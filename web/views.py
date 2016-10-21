@@ -113,17 +113,33 @@ def provision(request):
 
             # create the Mediasite folder structure
             course_folder = None
+            year_folder = None
+            term_folder = None
             root_folder = MediasiteAPI.get_or_create_folder(name=mediasite_root_folder, parent_folder_id=None)
             if root_folder is not None:
-                year_folder = MediasiteAPI.get_or_create_folder(name=year, parent_folder_id=root_folder.Id)
-                if year_folder is not None:
-                    term_folder = MediasiteAPI.get_or_create_folder(name=term, parent_folder_id=year_folder.Id)
-                    if term_folder is not None:
-                        course_folder = MediasiteAPI.get_or_create_folder(name=course_long_name,
-                                                                          parent_folder_id=term_folder.Id,
-                                                                          search_term=course.sis_course_id,
-                                                                          is_copy_destination=True,
-                                                                          is_shared=True)
+                if term.lower()== 'ongoing':
+                    # First check for Ongoing terms(The Ongoing term also have
+                    # year=None, so do the term check first so it doesn't raise
+                    # an Exception in the next block)
+                    # For such terms, do not create a folder for the year, move
+                    # onto the term folder.(essentially collapsing the folder structure).(TLT-2856)
+                    term_folder = MediasiteAPI.get_or_create_folder(name=term, parent_folder_id=root_folder.Id)
+                elif year == 'None':
+                    #If the year is not set, raise an error
+                    raise Exception('Sorry, there was an error provisioning this'
+                                    ' course. Please contact video-support@harvard.edu')
+                else:
+                    year_folder = MediasiteAPI.get_or_create_folder(name=year, parent_folder_id=root_folder.Id)
+
+            if year_folder is not None:
+                term_folder = MediasiteAPI.get_or_create_folder(name=term, parent_folder_id=year_folder.Id)
+
+            if term_folder is not None:
+                course_folder = MediasiteAPI.get_or_create_folder(name=course_long_name,
+                                                                  parent_folder_id=term_folder.Id,
+                                                                  alternate_search_term=course.sis_course_id,
+                                                                  is_copy_destination=True,
+                                                                  is_shared=True)
 
             if course_folder is not None:
                 # create course catalog, with course instance id to ensure uniqueness

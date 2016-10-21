@@ -99,10 +99,26 @@ class Course(BaseSerializedModel):
     @staticmethod
     def get_year_from_term(term):
         year = None
-        if hasattr(term, 'sis_term_id'):
-            if term.sis_term_id:
+
+        # If it's an Ongoing term, do not explicitly extract the year(TLT-2856)
+        if term.name.lower()== 'ongoing':
+            return year
+        try:
+            if hasattr(term, 'sis_term_id'):
                 start_year = int(float(term.sis_term_id[:4]))
                 return '{0}-{1}'.format(start_year, start_year + 1)
+            elif term.name:
+                #If the user doesn't see the sis_term_id attribute(due to the
+                #  users' Canvas permissions), use the term name to deduce the year
+                start_year = int(float(term.name[:4]))
+                return '{0}-{1}'.format(start_year, start_year + 1)
+        except:
+            # Return None for poorly formatted terms(example:term.sis_id=0-99
+            # or term names that do not have the expected 4 digit year in name)
+            pass
+
+        return year
+
 
     @staticmethod
     def get_year_from_start_date(year_start_at):
