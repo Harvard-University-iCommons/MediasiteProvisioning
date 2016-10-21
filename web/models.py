@@ -5,7 +5,7 @@ from django.db import models
 class School(models.Model):
     canvas_id = models.TextField()
     name = models.TextField()
-    mediasite_root_folder = models.TextField()
+    mediasite_root_folder = models.TextField(blank=False, null=False)
     consumer_key = models.TextField(blank=True, null=True)
     shared_secret = models.TextField(blank=True, null=True)
     catalog_show_date = models.BooleanField(default=False, null=False)
