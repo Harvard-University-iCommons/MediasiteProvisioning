@@ -117,7 +117,6 @@ def provision(request):
             term_folder = None
             root_folder = MediasiteAPI.get_or_create_folder(name=mediasite_root_folder, parent_folder_id=None)
             if root_folder is not None:
-
                 if term.lower()== 'ongoing':
                     # First check for Ongoing terms(The Ongoing term also have
                     # year=None, so do the term check first so it doesn't raise
@@ -152,7 +151,7 @@ def provision(request):
                 course_catalog = MediasiteAPI.get_or_create_catalog(friendly_name=catalog_display_name,
                                                                     catalog_name=course_long_name,
                                                                     course_folder_id=course_folder.Id,
-                                                                    alternative_search_term=course.course_code)
+                                                                    search_term=course.sis_course_id)
                 if course_catalog is not None:
                     MediasiteAPI.set_catalog_settings(course_catalog.Id, catalog_show_date, catalog_show_time, catalog_items_per_page)
 
@@ -176,6 +175,15 @@ def provision(request):
                 ###################################
                 # get existing permissions for course folder
                 folder_permissions = MediasiteAPI.get_folder_permissions(course_folder.Id)
+
+                # NOTE: The following calls to `update_folder_permissions` do
+                # NOT actually call out to the Mediasite API.  Instead, they
+                # build up the `folder_permissions` Python list model.  The
+                # ultimate call to `assign_permissions_to_folder` makes the
+                # API call that passes up the list of permissions to Mediasite.
+                # As a future TBD, we should consider taking the
+                # `update_folder_permission` method out of the `apimethods`
+                # module since it's not actually an API call.
 
                 # create student role if it does not exist, and update (in memory) the permission set for the folder
                 directory_entry = "{0}@{1}".format(course.sis_course_id, oath_consumer_key)
@@ -236,7 +244,7 @@ def provision(request):
                 canvas_mediasite_module_item = canvas_api.create_mediasite_app_external_link(
                     course_id=course.id,
                     course_term=course.term.name,
-                    url=course_catalog.CatalogUrl,
+                    url=settings.MEDIASITE_LTI_LAUNCH_URL,
                     consumer_key=oath_consumer_key,
                     shared_secret=shared_secret)
 
