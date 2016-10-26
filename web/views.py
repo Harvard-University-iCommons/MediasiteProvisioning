@@ -142,8 +142,12 @@ def provision(request):
                 # create course catalog, with course instance id to ensure uniqueness
                 catalog_display_name = '{0}-{1}-{2}-{3}-lecture-video'\
                     .format(mediasite_root_folder, term, course.course_code, course.sis_course_id)
-                # this is needed because a bug in Mediasite allows for the creation of a URL with potentially
-                # dangerous strings in it. we strip out the characters that we know might create that type of URL
+                # This is needed because a bug in Mediasite allows for the
+                # creation of a URL with potentially dangerous strings in it.
+                # we strip out the characters that we know might create that
+                # type of URL. Unicode strings require a translation map of
+                # code points to replacement characters, see
+                # https://docs.python.org/2/library/stdtypes.html#str.translate
                 catalog_display_name = catalog_display_name.translate(
                     {ord(c): None for c in '<>*%:&\\ '})
                 course_catalog = MediasiteAPI.get_or_create_catalog(friendly_name=catalog_display_name,
