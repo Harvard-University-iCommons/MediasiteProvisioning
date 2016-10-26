@@ -1,22 +1,19 @@
-from django.shortcuts import render, get_object_or_404
-from django.views import generic
-from django.shortcuts import redirect
+from __future__ import unicode_literals
+
+import logging
+
+from django.shortcuts import redirect, render
 from django.conf import settings
 from django.contrib.auth.decorators import login_required
-from django.http import HttpResponseServerError, HttpResponse
 from django.contrib.auth.models import User
 from django.core.exceptions import ObjectDoesNotExist
-import string
-import sys
-import json
-import logging
-from datetime import datetime
-from canvas.apimethods import CanvasAPI, CanvasServiceException
-from canvas.apimodels import Term, SearchResults
-from mediasite.apimethods import MediasiteAPI, MediasiteServiceException
-from mediasite.apimodels import UserProfile, Role
+from django.http import HttpResponse, HttpResponseServerError
+
 from .forms import IndexForm
-from .models import School, Log, APIUser
+from .models import APIUser, School
+from canvas.apimethods import CanvasAPI, CanvasServiceException
+from mediasite.apimethods import MediasiteAPI, MediasiteServiceException
+from mediasite.apimodels import Role, UserProfile
 
 logger = logging.getLogger(__name__)
 
@@ -145,9 +142,14 @@ def provision(request):
                 # create course catalog, with course instance id to ensure uniqueness
                 catalog_display_name = '{0}-{1}-{2}-{3}-lecture-video'\
                     .format(mediasite_root_folder, term, course.course_code, course.sis_course_id)
-                # this is needed because a bug in Mediasite allows for the creation of a URL with potentially
-                # dangerous strings in it. we strip out the characters that we know might create that type of URL
-                catalog_display_name = catalog_display_name.translate(None, '<>*%:&\\ ')
+                # This is needed because a bug in Mediasite allows for the
+                # creation of a URL with potentially dangerous strings in it.
+                # we strip out the characters that we know might create that
+                # type of URL. Unicode strings require a translation map of
+                # code points to replacement characters, see
+                # https://docs.python.org/2/library/stdtypes.html#str.translate
+                catalog_display_name = catalog_display_name.translate(
+                    {ord(c): None for c in '<>*%:&\\ '})
                 course_catalog = MediasiteAPI.get_or_create_catalog(friendly_name=catalog_display_name,
                                                                     catalog_name=course_long_name,
                                                                     course_folder_id=course_folder.Id,

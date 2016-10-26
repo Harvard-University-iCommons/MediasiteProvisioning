@@ -1,6 +1,9 @@
+from __future__ import unicode_literals
+
 from django.test import TestCase
 from .apimethods import MediasiteAPI
-from .apimodels import Role, Folder
+from .apimodels import Role
+
 
 # Create your tests here.
 class MediasiteTestCase(TestCase):
