@@ -1,22 +1,19 @@
-from django.shortcuts import render, get_object_or_404
-from django.views import generic
-from django.shortcuts import redirect
+from __future__ import unicode_literals
+
+import logging
+
+from django.shortcuts import redirect, render
 from django.conf import settings
 from django.contrib.auth.decorators import login_required
-from django.http import HttpResponseServerError, HttpResponse
 from django.contrib.auth.models import User
 from django.core.exceptions import ObjectDoesNotExist
-import string
-import sys
-import json
-import logging
-from datetime import datetime
-from canvas.apimethods import CanvasAPI, CanvasServiceException
-from canvas.apimodels import Term, SearchResults
-from mediasite.apimethods import MediasiteAPI, MediasiteServiceException
-from mediasite.apimodels import UserProfile, Role
+from django.http import HttpResponse, HttpResponseServerError
+
 from .forms import IndexForm
-from .models import School, Log, APIUser
+from .models import APIUser, School
+from canvas.apimethods import CanvasAPI, CanvasServiceException
+from mediasite.apimethods import MediasiteAPI, MediasiteServiceException
+from mediasite.apimodels import Role, UserProfile
 
 logger = logging.getLogger(__name__)
 
@@ -113,37 +110,82 @@ def provision(request):
 
             # create the Mediasite folder structure
             course_folder = None
+            year_folder = None
+            term_folder = None
             root_folder = MediasiteAPI.get_or_create_folder(name=mediasite_root_folder, parent_folder_id=None)
             if root_folder is not None:
-                year_folder = MediasiteAPI.get_or_create_folder(name=year, parent_folder_id=root_folder.Id)
-                if year_folder is not None:
-                    term_folder = MediasiteAPI.get_or_create_folder(name=term, parent_folder_id=year_folder.Id)
-                    if term_folder is not None:
-                        course_folder = MediasiteAPI.get_or_create_folder(name=course_long_name,
-                                                                          parent_folder_id=term_folder.Id,
-                                                                          alternate_search_term=course.sis_course_id,
-                                                                          is_copy_destination=True,
-                                                                          is_shared=True)
+                if term.lower()== 'ongoing':
+                    # First check for Ongoing terms(The Ongoing term also have
+                    # year=None, so do the term check first so it doesn't raise
+                    # an Exception in the next block)
+                    # For such terms, do not create a folder for the year, move
+                    # onto the term folder.(essentially collapsing the folder structure).(TLT-2856)
+                    term_folder = MediasiteAPI.get_or_create_folder(name=term, parent_folder_id=root_folder.Id)
+                elif year == 'None':
+                    #If the year is not set, raise an error
+                    raise Exception('Sorry, there was an error provisioning this'
+                                    ' course. Please contact video-support@harvard.edu')
+                else:
+                    year_folder = MediasiteAPI.get_or_create_folder(name=year, parent_folder_id=root_folder.Id)
+
+            if year_folder is not None:
+                term_folder = MediasiteAPI.get_or_create_folder(name=term, parent_folder_id=year_folder.Id)
+
+            if term_folder is not None:
+                course_folder = MediasiteAPI.get_or_create_folder(name=course_long_name,
+                                                                  parent_folder_id=term_folder.Id,
+                                                                  search_term=course.sis_course_id,
+                                                                  is_copy_destination=True,
+                                                                  is_shared=True)
 
             if course_folder is not None:
                 # create course catalog, with course instance id to ensure uniqueness
                 catalog_display_name = '{0}-{1}-{2}-{3}-lecture-video'\
                     .format(mediasite_root_folder, term, course.course_code, course.sis_course_id)
-                # this is needed because a bug in Mediasite allows for the creation of a URL with potentially
-                # dangerous strings in it. we strip out the characters that we know might create that type of URL
-                catalog_display_name = catalog_display_name.translate(None, '<>*%:&\\ ')
+                # This is needed because a bug in Mediasite allows for the
+                # creation of a URL with potentially dangerous strings in it.
+                # we strip out the characters that we know might create that
+                # type of URL. Unicode strings require a translation map of
+                # code points to replacement characters, see
+                # https://docs.python.org/2/library/stdtypes.html#str.translate
+                catalog_display_name = catalog_display_name.translate(
+                    {ord(c): None for c in '<>*%:&\\ '})
                 course_catalog = MediasiteAPI.get_or_create_catalog(friendly_name=catalog_display_name,
                                                                     catalog_name=course_long_name,
                                                                     course_folder_id=course_folder.Id,
-                                                                    alternative_search_term=course.course_code)
+                                                                    search_term=course.sis_course_id)
                 if course_catalog is not None:
                     MediasiteAPI.set_catalog_settings(course_catalog.Id, catalog_show_date, catalog_show_time, catalog_items_per_page)
+
+                    # create Mediasite module if it doesn't exist
+                    course_module = MediasiteAPI.get_or_create_module(
+                        course.sis_course_id,
+                        catalog_display_name,
+                        catalog_mediasite_id=course_catalog.Id)
+
+                    # associate the module with the catalog
+                    existing_association = next(
+                        (a for a in course_module.Associations
+                         if course_catalog.Id in a),
+                        None)
+                    if existing_association is None:
+                        MediasiteAPI.add_module_association_by_mediasite_id(
+                            course_module.Id, course_catalog.Id)
 
                 ###################################
                 # Assign permissions
                 ###################################
                 # get existing permissions for course folder
                 folder_permissions = MediasiteAPI.get_folder_permissions(course_folder.Id)
+
+                # NOTE: The following calls to `update_folder_permissions` do
+                # NOT actually call out to the Mediasite API.  Instead, they
+                # build up the `folder_permissions` Python list model.  The
+                # ultimate call to `assign_permissions_to_folder` makes the
+                # API call that passes up the list of permissions to Mediasite.
+                # As a future TBD, we should consider taking the
+                # `update_folder_permission` method out of the `apimethods`
+                # module since it's not actually an API call.
 
                 # create student role if it does not exist, and update (in memory) the permission set for the folder
                 directory_entry = "{0}@{1}".format(course.sis_course_id, oath_consumer_key)
@@ -152,7 +194,7 @@ def provision(request):
                     folder_permissions, course_role, MediasiteAPI.VIEW_ONLY_PERMISSION_FLAG)
 
                 # create Instructor role if it does not exist
-                directory_entry = "{0}@{1}".format("urn:lti:instrole:ims/lis/Instructor:{0}".format(course.sis_course_id), oath_consumer_key)
+                directory_entry = "{0}@{1}".format("urn:lti:role:ims/lis/Instructor:{0}".format(course.sis_course_id), oath_consumer_key)
                 course_role = MediasiteAPI.get_or_create_role(role_name="{0} [Instructor]".format(course_long_name), directory_entry=directory_entry)
                 folder_permissions = MediasiteAPI.update_folder_permissions(
                     folder_permissions, course_role, MediasiteAPI.READ_WRITE_PERMISSION_FLAG)
@@ -204,7 +246,7 @@ def provision(request):
                 canvas_mediasite_module_item = canvas_api.create_mediasite_app_external_link(
                     course_id=course.id,
                     course_term=course.term.name,
-                    url=course_catalog.CatalogUrl,
+                    url=settings.MEDIASITE_LTI_LAUNCH_URL,
                     consumer_key=oath_consumer_key,
                     shared_secret=shared_secret)
 

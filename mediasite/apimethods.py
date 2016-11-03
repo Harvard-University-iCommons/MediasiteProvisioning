@@ -1,17 +1,32 @@
-import requests
+from __future__ import unicode_literals
+
 import json
-import uuid
-import urllib
 import logging
 import time
+import uuid
 
 from django.conf import settings
+import requests
 from requests.auth import HTTPBasicAuth
 
-from .serializer import FolderSerializer, FolderPermissionSerializer, HomeSerializer, CatalogSerializer
-from .serializer import RoleSerializer, ResourcePermissionSerializer, FolderPermissionSerializer
-from .serializer import UserProfileSerializer, CatalogSettingSerializer
-from .apimodels import Home, Folder, Catalog, CatalogSetting, Role, ResourcePermission, FolderPermission, AccessControl, UserProfile
+from .apimodels import (
+    AccessControl,
+    Catalog,
+    Folder,
+    FolderPermission,
+    Home,
+    Module,
+    ResourcePermission,
+    Role,
+    UserProfile, )
+from .serializer import (
+    CatalogSerializer,
+    FolderSerializer,
+    HomeSerializer,
+    ModuleSerializer,
+    ResourcePermissionSerializer,
+    RoleSerializer,
+    UserProfileSerializer, )
 from .utils import odata_encode_str
 
 logger = logging.getLogger(__name__)
@@ -23,7 +38,7 @@ class MediasiteServiceException(Exception):
     def __init__(self, mediasite_exception,
                  message='Error communicating with Mediasite.  Please note this error and contact support.'):
         super(MediasiteServiceException, self).__init__(message)
-        self._mediasite_exception=mediasite_exception
+        self._mediasite_exception = mediasite_exception
 
     def status_code(self):
         if self._mediasite_exception:
@@ -39,6 +54,7 @@ class MediasiteServiceException(Exception):
                     error = 'Could not extract error from server'
                     pass
                 return error
+
 
 class MediasiteAPI:
     VIEW_ONLY_PERMISSION_FLAG = 4
@@ -57,34 +73,37 @@ class MediasiteAPI:
     def get_root_folder_id():
         if MediasiteAPI._root_folder_id is None:
             url = 'Home'
-            json =  MediasiteAPI.get_mediasite_request_json(url)
+            json = MediasiteAPI.get_mediasite_request_json(url)
             serializer = HomeSerializer(data=json)
             if serializer.is_valid(raise_exception=True):
                 MediasiteAPI._root_folder_id = Home(**serializer.validated_data).RootFolderId
         return MediasiteAPI._root_folder_id
 
     @staticmethod
-    def get_folder(name, parent_folder_id, alternative_search_term=None):
-        folders = MediasiteAPI.get_folders(name, parent_folder_id)
+    def get_folder(name, parent_folder_id, search_term=None):
+        # Search on the name being passed in, unless a search_term is provided
+        if search_term is None:
+            search_term = name
+
+        folders = MediasiteAPI.get_folders(search_term, parent_folder_id)
         folder = next((f for f in folders if f.Name == name), None)
-        # 8/25/16 JDB: NOTE - The folder searches are exact match, so using an alternative of the sis id seems
-        # wasteful and a potential problem for legacy naming schemes.  Commenting this out for now.
-        # the folder name can be too long for the API to parse, so we can use an alternate unique search term
-        # ideally the course sis id
-        # if not folder and alternative_search_term is not None:
-        #     folders = MediasiteAPI.get_folders(alternative_search_term, parent_folder_id)
-        #     folder = next((f for f in folders if f.Name == name), None)
         return folder
 
     @staticmethod
     def get_folders(name, parent_folder_id):
+        """ The mediasite API doesn't respect the oData "eq" filter as an exact match.  Rather, it appears from testing that
+        it behaves more like a "contains".  In addition, while the oData docs desribe "eq" as being case sensitive, it appears
+        to be case insensitive in practice with Mediasite.  There is also some weird behavior when matching common words like
+        "The" and "And" - I've observed that these words can yield no results when left as camel cased, but work fine (or are
+        ignored) when lowercased. """
+
         if parent_folder_id is None:
             parent_folder_id = MediasiteAPI.get_root_folder_id()
         # we only search on the first 40 characters of the folder name because the API does not seem able to process
         # longer strings
         encoded_name = odata_encode_str(name)
         url = 'Folders'
-        params='$filter=ParentFolderId eq \'{0}\' and Name eq \'{1}\''.format(parent_folder_id, encoded_name)
+        params = '$filter=ParentFolderId eq \'{0}\' and Name eq \'{1}\''.format(parent_folder_id, encoded_name)
         json = MediasiteAPI.get_mediasite_request_json(url, params=params)
         # the json returned is in the oData format, and there do not appear to be any
         # python libraries that parse oData.  we can extract the 'value' property of the list to get at the
@@ -112,11 +131,11 @@ class MediasiteAPI:
             errors = serializer.errors
 
     @staticmethod
-    def get_or_create_folder(name, parent_folder_id, alternate_search_term=None, is_copy_destination=False, is_shared=False):
+    def get_or_create_folder(name, parent_folder_id, search_term=None, is_copy_destination=False, is_shared=False):
         if parent_folder_id is None:
             parent_folder_id = MediasiteAPI.get_root_folder_id()
         if parent_folder_id is not None:
-            folder = MediasiteAPI.get_folder(name, parent_folder_id, alternate_search_term)
+            folder = MediasiteAPI.get_folder(name, parent_folder_id, search_term)
             if not folder:
                 folder = MediasiteAPI.create_folder(name, parent_folder_id, is_copy_destination, is_shared)
         return folder
@@ -125,29 +144,30 @@ class MediasiteAPI:
     # Catalogs
     ######################################################
     @staticmethod
-    def get_or_create_catalog(friendly_name, catalog_name, course_folder_id, alternative_search_term):
-        catalog = MediasiteAPI.get_catalog(catalog_name, course_folder_id, alternative_search_term)
+    def get_or_create_catalog(friendly_name, catalog_name, course_folder_id, search_term=None):
+        catalog = MediasiteAPI.get_catalog(catalog_name, course_folder_id, search_term)
         if catalog is None:
             catalog = MediasiteAPI.create_catalog(friendly_name, catalog_name, course_folder_id)
         return catalog
 
     @staticmethod
-    def get_catalog(name, course_folder_id, alternative_search_term):
-        catalogs = MediasiteAPI.get_catalogs(name)
+    def get_catalog(name, course_folder_id, search_term=None):
+        """ See oDAta note above in `get_folders` method """
+
+        # Search on the name being passed in, unless a search_term is provided
+        if search_term is None:
+            search_term = name
+
+        catalogs = MediasiteAPI.get_catalogs(search_term)
         catalog = next((c for c in catalogs if c.LinkedFolderId == course_folder_id), None)
-        # 8/25/16 JDB: NOTE - commenting this out as I don't think we need to search on an alternative name or
-        # even match on name at all.  There should only be one catalog linked to a course folder in this
-        # provisioning setup.
-        # if not catalog and len(name) > 40:
-        #     catalogs = MediasiteAPI.get_catalogs(alternative_search_term)
-        #     catalog = next((c for c in catalogs if c.LinkedFolderId == course_folder_id and c.Name == name), None)
+
         return catalog
 
     @staticmethod
     def get_catalogs(name):
         url = 'Catalogs'
         encoded_name = odata_encode_str(name)
-        params='$filter=Name eq \'{0}\''.format(encoded_name)
+        params = '$filter=Name eq \'{0}\''.format(encoded_name)
         json = MediasiteAPI.get_mediasite_request_json(url, params=params)
         serializer = CatalogSerializer(data=json['value'], many=True)
         if serializer.is_valid(raise_exception=True):
@@ -181,6 +201,99 @@ class MediasiteAPI:
         )
         url = 'Catalogs(\'{0}\')/Settings'.format(catalog_id)
         MediasiteAPI.patch_mediasite_request(url, catalog_settings)
+
+    ######################################################
+    # Modules
+    ######################################################
+    @staticmethod
+    def get_or_create_module(module_id, name, catalog_mediasite_id=None):
+        module = MediasiteAPI.get_module(module_id=module_id)
+        if module is None:
+            module = MediasiteAPI.create_module(
+                module_id, name, catalog_mediasite_id)
+        return module
+
+    @staticmethod
+    def create_module(module_id, name, catalog_mediasite_id=None):
+        module_to_create = dict(ModuleId=module_id, Name=name)
+        if catalog_mediasite_id:
+            # immediately associate the module with a catalog
+            module_to_create['Associations'] = [catalog_mediasite_id]
+        module_json = MediasiteAPI.post_mediasite_request_json('Modules',
+                                                               module_to_create)
+        serializer = ModuleSerializer(data=module_json)
+        if serializer.is_valid(raise_exception=True):
+            return Module(**serializer.validated_data)
+
+    @staticmethod
+    def get_module(mediasite_id=None, module_id=None):
+        """
+        Gets a module by either its Id or ModuleId properties.
+        :param mediasite_id: The module's Id property.
+        :param module_id: The module's ModuleId property.
+        :return: a mediasite.apimodels.Module if found; None if no object found;
+         throws an error if multiple objects found.
+        """
+        if not(bool(mediasite_id) ^ bool(module_id)):  # xor
+            raise ValueError('get_module() requires one identifier')
+        return MediasiteAPI.get_module_by_mediasite_id(mediasite_id) \
+            if mediasite_id else MediasiteAPI.get_module_by_module_id(module_id)
+
+    @staticmethod
+    def get_module_by_mediasite_id(mediasite_id):
+        """
+        Finds a module by its Id.
+        :return: a mediasite.apimodels.Module if found; None if no object found.
+        """
+        url = "Modules('{}')".format(mediasite_id)
+        try:
+            module_json = MediasiteAPI.get_mediasite_request_json(url)
+        except MediasiteServiceException as mse:
+            if mse.status_code() == requests.codes.not_found:
+                return None
+            raise mse
+        serializer = ModuleSerializer(data=module_json)
+        if serializer.is_valid(raise_exception=True):
+            return Module(**serializer.validated_data)
+
+    @staticmethod
+    def get_module_by_module_id(module_id):
+        """
+        Finds a module by its ModuleId. Expects only one module to match.
+        :return: a mediasite.apimodels.Module if found; None if no object found;
+         throws an error if multiple objects found.
+        """
+        url = 'Modules'
+        encoded_module_id = odata_encode_str(module_id)
+        # this is equivalent to a 'contains' search, as this is a
+        # mediasite-search-backed filter endpoint
+        params = "$filter=ModuleId eq '{0}'".format(encoded_module_id)
+        module_json = MediasiteAPI.get_mediasite_request_json(url, params=params)
+        if module_json['odata.count'] == "0":
+            return None
+        if module_json['odata.count'] != "1":
+            raise ValueError(('get_module_by_module_id() found more than one '
+                              'Module for filter params {}').format(params))
+        serializer = ModuleSerializer(data=module_json['value'], many=True)
+        if serializer.is_valid(raise_exception=True):
+            return Module(**serializer.validated_data[0])
+
+    @staticmethod
+    def add_module_association_by_mediasite_id(module_mediasite_id,
+                                               associated_mediasite_id):
+        """
+        Creates an association between a module and a catalog. Note: if the
+        association already exists, no error is returned, and the association
+        is retained.
+        :param module_mediasite_id: The Module's Id property.
+        :param associated_mediasite_id: The Catalog's Id property.
+        :return: the requests.Response of the mediasite API call (status code
+         will be 204 No Content if the association was created or already
+         existed).
+        """
+        url = "Modules('{}')/AddAssociation".format(module_mediasite_id)
+        associated_object = dict(MediasiteId=associated_mediasite_id)
+        return MediasiteAPI.mediasite_request(url, 'POST', associated_object)
 
     ######################################################
     # Permissions
@@ -354,6 +467,7 @@ class MediasiteAPI:
 
     @staticmethod
     def mediasite_request(url, method, body, params=None):
+        start_time = time.time()
         try:
             if method == 'POST':
                 r = requests.post(url=MediasiteAPI.get_mediasite_url(url),
@@ -382,21 +496,19 @@ class MediasiteAPI:
                                  headers=MediasiteAPI.get_mediasite_headers())
             r.raise_for_status()
         except Exception as e:
-            logger.info("tried to make a {} call to {} via requests".format(
-                r.request.method, r.request.url))
+            elapsed_secs = time.time() - start_time
+            logger.info("tried to make a {} call to {} via requests in "
+                        "{:.3f}s".format(method, url, elapsed_secs))
             raise MediasiteServiceException(mediasite_exception=e)
 
+        elapsed_secs = time.time() - start_time
+        logger.debug("made a {} call to {} via requests in {:.3f}s".format(
+            r.request.method, r.request.url, elapsed_secs))
         return r
 
     @staticmethod
     def mediasite_request_json(url, method, body, params=None):
-        start_time = time.time()
         req = MediasiteAPI.mediasite_request(url, method, body, params)
-        elapsed_secs = time.time() - start_time
-        logger.debug("made a {} call to {} via requests in {:.3f}s".format(
-            req.request.method,
-            req.request.url,
-            elapsed_secs))
         try:
             return req.json()
         except Exception as e:
@@ -413,7 +525,7 @@ class MediasiteAPI:
 
     @staticmethod
     def get_mediasite_url(partial_url):
-        return settings.MEDIASITE_URL.format(partial_url)
+        return settings.MEDIASITE_API_URL.format(partial_url)
 
     @staticmethod
     def is_production():

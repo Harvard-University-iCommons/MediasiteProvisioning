@@ -1,6 +1,15 @@
 from rest_framework import  serializers
-from .apimodels import Role, Catalog, CatalogSetting, ResourcePermission, FolderPermission, \
-    Folder, Home, UserProfile, AccessControl
+from .apimodels import (
+    AccessControl,
+    Catalog,
+    CatalogSetting,
+    Folder,
+    FolderPermission,
+    Home,
+    Module,
+    ResourcePermission,
+    Role,
+    UserProfile, )
 
 class RoleSerializer(serializers.ModelSerializer):
     class Meta:
@@ -17,6 +26,12 @@ class CatalogSettingSerializer(serializers.ModelSerializer):
 class AccessControlSerializer(serializers.ModelSerializer):
     class Meta:
         model = AccessControl
+
+class ModuleSerializer(serializers.ModelSerializer):
+    Associations = serializers.ListField(child=serializers.CharField())
+
+    class Meta:
+        model = Module
 
 class ResourcePermissionSerializer(serializers.ModelSerializer):
     AccessControlList = AccessControlSerializer(many=True)

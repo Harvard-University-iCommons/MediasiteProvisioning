@@ -1,16 +1,34 @@
-import requests
+from __future__ import unicode_literals
+
 import enum
 import json
-import sys
 import logging
+from operator import attrgetter
+
 
 from django.conf import settings
 from django.core.exceptions import ObjectDoesNotExist
-from operator import itemgetter, attrgetter, methodcaller
-from rest_framework.exceptions import APIException
-from .serializer import AccountSerializer, CourseSerializer, EnrollmentSerializer, UserSerializer, ModuleSerializer
-from .serializer import ModuleItemSerializer, ExternalToolSerializer, LinkSerializer
-from .apimodels import Course, Module, ModuleItem, Account, User, Enrollment, ExternalTool, SearchResults, Term, Link
+import requests
+
+from .apimodels import (
+    Account,
+    Course,
+    Enrollment,
+    ExternalTool,
+    Link,
+    Module,
+    ModuleItem,
+    SearchResults,
+    User)
+from .serializer import (
+    AccountSerializer,
+    CourseSerializer,
+    EnrollmentSerializer,
+    ExternalToolSerializer,
+    LinkSerializer,
+    ModuleItemSerializer,
+    ModuleSerializer,
+    UserSerializer)
 
 logger = logging.getLogger(__name__)
 
@@ -53,10 +71,14 @@ class CanvasAPI:
     # Accounts
     ##########################################################
     def get_accounts_for_current_user(self):
-        response = self.get_canvas_request(partial_url='accounts')
-        serializer = AccountSerializer(data=response.json(), many=True)
+        response = self.get_canvas_request(partial_url='accounts?per_page=100')
+        account_list = response.json()
+        while response.links.get('next', False):
+            next_page = response.links['next']['url']
+            response = self.get_canvas_request(None, full_url=next_page)
+            account_list.extend(response.json())
+        serializer = AccountSerializer(data=account_list, many=True)
         if serializer.is_valid(raise_exception=True):
-            # return [Account(**attrs) for attrs in serializer.validated_data if attrs.has_key('sis_account_id')]
             return [Account(**attrs) for attrs in serializer.validated_data]
 
     ##########################################################
@@ -327,10 +349,10 @@ class CanvasAPI:
         r = self.post_canvas_request(partial_url=partial_url, data=auth_data, use_api=False)
         return r.json()['access_token']
 
-    def get_canvas_request(self, partial_url):
+    def get_canvas_request(self, partial_url, full_url=None):
         try:
-            r = requests.get(url=CanvasAPI.get_canvas_api_url(partial_url),
-                             headers=self.get_canvas_headers())
+            url = full_url or CanvasAPI.get_canvas_api_url(partial_url)
+            r = requests.get(url=url, headers=self.get_canvas_headers())
             r.raise_for_status()
             return r
         except Exception as e:
