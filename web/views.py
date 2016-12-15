@@ -205,6 +205,13 @@ def provision(request):
                 folder_permissions = MediasiteAPI.update_folder_permissions(
                     folder_permissions, course_role, MediasiteAPI.READ_WRITE_PERMISSION_FLAG)
 
+                # add Analytics role for VPAL Research - note that they need read and view, but view is default,
+                # so we do not need to add that permission explicitly
+                analytics_users_role = MediasiteAPI.get_role_by_name('Analytics Application')
+                if analytics_users_role:
+                     folder_permissions = MediasiteAPI.update_folder_permissions(
+                        folder_permissions, analytics_users_role, MediasiteAPI.READ_ONLY_PERMISSION_FLAG)
+
                 # remove permissions for general canvas users users from the in memory permission set
                 # so that the course folder is secured
                 canvas_user_role = MediasiteAPI.get_role_by_directory_entry('canvas@{0}'.format(oath_consumer_key))
