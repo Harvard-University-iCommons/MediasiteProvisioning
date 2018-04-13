@@ -18,8 +18,16 @@ from django.contrib import admin
 from django.contrib.auth import views as auth_views
 
 urlpatterns = [
-    url(r'^', include('web.urls', namespace="web")),
-    url(r'^accounts/login/$', auth_views.login, {'template_name': 'registration/login.html'}, name='login'),
-    url(r'^accounts/logout', auth_views.logout, {'template_name': 'registration/logout.html'}, name='logout'),
-    url(r'^admin/', include(admin.site.urls)),
+    url(r'^', include('web.urls')),
+    url(
+        r'^accounts/login/$',
+        auth_views.LoginView.as_view(template_name='registration/login.html'),
+        name='login'
+    ),
+    url(
+        r'^accounts/logout/$',
+        auth_views.LogoutView.as_view(template_name='registration/logout.html'),
+        name='logout'
+    ),
+    url(r'^admin/', admin.site.urls),
 ]

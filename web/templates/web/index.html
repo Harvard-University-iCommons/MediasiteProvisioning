@@ -19,7 +19,7 @@
     <!-- Main -->
     <div>
         <div class="left_nav">
-            {% if false %}
+            {% if results %}
                 <!-- Left nav/facets -->
                 {% if results.terms %}
                     <div>
@@ -127,11 +127,12 @@
             {% endif %}
 
             <div class="paging">
-                {% if results.links %}
-                    {% for link in results.links %}
-                        <a href="#" onclick="LoadPage('{{ link.page }}'); return false;">{{ link.rel }}</a> &nbsp;
-                    {% endfor %}
-
+                {% if results %}
+                    {% if results.links %}
+                        {% for link in results.links %}
+                            <a href="#" onclick="LoadPage('{{ link.page }}'); return false;">{{ link.rel }}</a> &nbsp;
+                        {% endfor %}
+                    {% endif %}
                 {% endif %}
             </div>
 
