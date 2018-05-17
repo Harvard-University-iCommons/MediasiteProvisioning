@@ -65,6 +65,20 @@ class MediasiteAPI:
     DEFAULT_TERM_NAME = 'Default Term'
 
     ######################################################
+    # API Session
+    ######################################################
+    _api_session = None
+
+    @staticmethod
+    def get_api_session():
+        if MediasiteAPI._api_session is None:
+            _session = requests.Session()
+            _session.auth = MediasiteAPI.get_mediasite_auth()
+            _session.headers.update(MediasiteAPI.get_mediasite_headers())
+            MediasiteAPI._api_session = _session
+        return MediasiteAPI._api_session
+
+    ######################################################
     # Folders
     ######################################################
     _root_folder_id = None
@@ -447,53 +461,39 @@ class MediasiteAPI:
     ######################################################
     @staticmethod
     def get_mediasite_request_json(url, params=None):
-        return MediasiteAPI.mediasite_request_json(url=url, method='GET', body=None, params=params)
+        return MediasiteAPI.mediasite_request_json(
+            url=url, method='GET', params=params)
 
     @staticmethod
     def post_mediasite_request_json(url, body):
-        return MediasiteAPI.mediasite_request_json(url=url, method='POST', body=body)
+        return MediasiteAPI.mediasite_request_json(
+            url=url, method='POST', body=json.dumps(body))
 
     @staticmethod
     def put_mediasite_request_json(url, body):
-        return MediasiteAPI.mediasite_request_json(url=url, method='PUT', body=body)
+        return MediasiteAPI.mediasite_request_json(
+            url=url, method='PUT', body=json.dumps(body))
 
     @staticmethod
     def patch_mediasite_request_json(url, body):
-        return MediasiteAPI.mediasite_request_json(url=url, method='PATCH', body=body)
+        return MediasiteAPI.mediasite_request_json(
+            url=url, method='PATCH', body=json.dumps(body))
 
     @staticmethod
     def patch_mediasite_request(url, body):
-        return MediasiteAPI.mediasite_request(url=url, method='PATCH', body=body)
+        return MediasiteAPI.mediasite_request(
+            url=url, method='PATCH', body=json.dumps(body))
 
     @staticmethod
-    def mediasite_request(url, method, body, params=None):
+    def mediasite_request(url, method, body=None, params=None):
         start_time = time.time()
         try:
-            if method == 'POST':
-                r = requests.post(url=MediasiteAPI.get_mediasite_url(url),
-                                  auth=MediasiteAPI.get_mediasite_auth(),
-                                  headers=MediasiteAPI.get_mediasite_headers(),
-                                  data=json.dumps(body))
-            elif method == 'PUT':
-                r = requests.put(url=MediasiteAPI.get_mediasite_url(url),
-                                 auth=MediasiteAPI.get_mediasite_auth(),
-                                 headers=MediasiteAPI.get_mediasite_headers(),
-                                 data=json.dumps(body))
-            elif method == 'DELETE':
-                r = requests.delete(url=MediasiteAPI.get_mediasite_url(url),
-                                    auth=MediasiteAPI.get_mediasite_auth(),
-                                    headers=MediasiteAPI.get_mediasite_headers(),
-                                    data=json.dumps(body))
-            elif method == 'PATCH':
-                r = requests.patch(url=MediasiteAPI.get_mediasite_url(url),
-                                   auth=MediasiteAPI.get_mediasite_auth(),
-                                   headers=MediasiteAPI.get_mediasite_headers(),
-                                   data=json.dumps(body))
-            else:
-                r = requests.get(url=MediasiteAPI.get_mediasite_url(url),
-                                 params=params,
-                                 auth=MediasiteAPI.get_mediasite_auth(),
-                                 headers=MediasiteAPI.get_mediasite_headers())
+            mediasite_session = MediasiteAPI.get_api_session()
+            r = mediasite_session.request(
+                method,
+                MediasiteAPI.get_mediasite_url(url),
+                params=params,
+                data=body)
             r.raise_for_status()
         except Exception as e:
             elapsed_secs = time.time() - start_time
