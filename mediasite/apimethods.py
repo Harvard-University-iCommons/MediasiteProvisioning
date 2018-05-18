@@ -76,6 +76,7 @@ class MediasiteAPI:
             _session.auth = MediasiteAPI.get_mediasite_auth()
             _session.headers.update(MediasiteAPI.get_mediasite_headers())
             MediasiteAPI._api_session = _session
+            logger.debug("Created a Mediasite API session object!")
         return MediasiteAPI._api_session
 
     ######################################################
@@ -193,8 +194,8 @@ class MediasiteAPI:
     def create_catalog(friendly_name, catalog_name, course_folder_id):
         catalog_to_create = dict(
             FriendlyName=friendly_name,
-            Name = catalog_name,
-            LinkedFolderId = course_folder_id
+            Name=catalog_name,
+            LinkedFolderId=course_folder_id
         )
         json = MediasiteAPI.post_mediasite_request_json('Catalogs', catalog_to_create)
         serializer = CatalogSerializer(data=json)
@@ -214,7 +215,7 @@ class MediasiteAPI:
             AllowLoginControls = False
         )
         url = 'Catalogs(\'{0}\')/Settings'.format(catalog_id)
-        MediasiteAPI.patch_mediasite_request(url, catalog_settings)
+        MediasiteAPI.patch_mediasite_request_json(url, catalog_settings)
 
     ######################################################
     # Modules
@@ -480,11 +481,6 @@ class MediasiteAPI:
             url=url, method='PATCH', body=json.dumps(body))
 
     @staticmethod
-    def patch_mediasite_request(url, body):
-        return MediasiteAPI.mediasite_request_json(
-            url=url, method='PATCH', body=json.dumps(body))
-
-    @staticmethod
     def mediasite_request_json(url, method, body=None, params=None):
         start_time = time.time()
         try:
@@ -504,7 +500,11 @@ class MediasiteAPI:
         elapsed_secs = time.time() - start_time
         logger.debug("made a {} call to {} via requests in {:.3f}s".format(
             r.request.method, r.request.url, elapsed_secs))
-        return r.json()
+
+        # A 204 request, for example, will have no content so make sure there's
+        # something to translate to json before returning
+        if r.content:
+            return r.json()
 
     @staticmethod
     def get_mediasite_auth():
@@ -518,8 +518,3 @@ class MediasiteAPI:
     @staticmethod
     def get_mediasite_url(partial_url):
         return settings.MEDIASITE_API_URL.format(partial_url)
-
-    @staticmethod
-    def is_production():
-        return False
-        # return settings.DEBUG == False
