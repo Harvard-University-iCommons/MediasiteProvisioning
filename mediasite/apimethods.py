@@ -481,11 +481,11 @@ class MediasiteAPI:
 
     @staticmethod
     def patch_mediasite_request(url, body):
-        return MediasiteAPI.mediasite_request(
+        return MediasiteAPI.mediasite_request_json(
             url=url, method='PATCH', body=json.dumps(body))
 
     @staticmethod
-    def mediasite_request(url, method, body=None, params=None):
+    def mediasite_request_json(url, method, body=None, params=None):
         start_time = time.time()
         try:
             mediasite_session = MediasiteAPI.get_api_session()
@@ -504,15 +504,7 @@ class MediasiteAPI:
         elapsed_secs = time.time() - start_time
         logger.debug("made a {} call to {} via requests in {:.3f}s".format(
             r.request.method, r.request.url, elapsed_secs))
-        return r
-
-    @staticmethod
-    def mediasite_request_json(url, method, body, params=None):
-        req = MediasiteAPI.mediasite_request(url, method, body, params)
-        try:
-            return req.json()
-        except Exception as e:
-            raise MediasiteServiceException(mediasite_exception=e)
+        return r.json()
 
     @staticmethod
     def get_mediasite_auth():
