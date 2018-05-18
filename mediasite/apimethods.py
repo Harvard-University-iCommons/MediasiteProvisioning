@@ -308,7 +308,7 @@ class MediasiteAPI:
         """
         url = "Modules('{}')/AddAssociation".format(module_mediasite_id)
         associated_object = dict(MediasiteId=associated_mediasite_id)
-        return MediasiteAPI.mediasite_request(url, 'POST', associated_object)
+        return MediasiteAPI.mediasite_request_json(url, 'POST', associated_object)
 
     ######################################################
     # Permissions
