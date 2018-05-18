@@ -63,3 +63,5 @@ secure.py
 *.sqlite3
 
 .idea
+
+http_static
