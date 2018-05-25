@@ -1,55 +1,60 @@
-{% load staticfiles %}
+{% load static %}
+<html>
+    <head>
+        <link rel=icon href="{% static 'web/favicon.ico' %}" type="image/x-icon">
+        <link rel="stylesheet" type="text/css" href="{% static 'web/style.css' %}" />
+        {% if debug %}
+            <script src="https://code.jquery.com/jquery-1.11.3.js"></script>
+        {% else %}
+            <script src="https://code.jquery.com/jquery-1.11.3.min.js"></script>
+        {% endif %}
+    </head>
+    <body>
+        <div class="main">
+            <!-- Header -->
+            <div class="top_bar">
 
-<link rel="stylesheet" type="text/css" href="{% static "web/style.css" %}" />
-{% if settings.DEBUG %}
-    <script src="https://code.jquery.com/jquery-1.11.3.js"></script>
-{% else %}
-    <script src="https://code.jquery.com/jquery-1.11.3.min.js"></script>
-{% endif %}
-
-<div class="main">
-    <!-- Header -->
-    <div class="top_bar">
-
-        <!-- Top bar -->
-        <a href="http://www.harvard.edu">Harvard.edu</a>
-    </div>
-    <div class="main_header">
-        <div class="user">
-            {% if request.user.is_authenticated %}
-            <div>
-                {% if request.user.first_name %}
-                    Welcome {{ request.user.first_name }} {{ request.user.last_name }}
-                {% else %}
-                    Welcome {{ request.user.username }}
-                {% endif %}
+                <!-- Top bar -->
+                <a href="http://www.harvard.edu">Harvard.edu</a>
             </div>
-            <a href ='{% url 'logout' %}'>(Logout)</a>
-            {% endif %}
+            <div class="main_header">
+                <div class="user">
+                    {% if request.user.is_authenticated %}
+                    <div>
+                        {% if request.user.first_name %}
+                            Welcome {{ request.user.first_name }} {{ request.user.last_name }}
+                        {% else %}
+                            Welcome {{ request.user.username }}
+                        {% endif %}
+                    </div>
+                    <a href ='{% url 'logout' %}'>(Logout)</a>
+                    {% endif %}
+                </div>
+                <!-- Main Header -->
+                <div>
+                    <img alt="Harvard University Information Technology" src="http://static.hwpi.harvard.edu/files/styles/os_files_medium/public/huit/files/logo.png?itok=F_YObg-K" />
+                    <div></div>
+                </div>
+                <div>
+                    <span class="welcome">Welcome to DVSP</span>
+                    Provision Mediasite for your classroom
+                </div>
+            </div>
+            {% block subheader %}
+            <div class="search_bar">
+                {% if form.accounts %}
+                    <!-- Search bar -->
+                    <form action="{% url 'web:index' %}" method="post" >{%  csrf_token %}
+                        <div>{{ form.accounts }}</div>
+                        <div>{{ form.search }}</div>
+                        <input type="submit" value="Search">
+                    </form>
+                {%  endif %}
+            </div>
+            {% endblock %}
+            <div>
+                {% block content %}{% endblock %}
+            </div>
         </div>
-        <!-- Main Header -->
-        <div>
-            <img alt="Harvard University Information Technology" src="http://static.hwpi.harvard.edu/files/styles/os_files_medium/public/huit/files/logo.png?itok=F_YObg-K" />
-            <div></div>
-        </div>
-        <div>
-            <span class="welcome">Welcome to DVSP</span>
-            Provision Mediasite for your classroom
-        </div>
-    </div>
-    {% block subheader %}
-    <div class="search_bar">
-        {% if form.accounts %}
-            <!-- Search bar -->
-            <form action="{% url 'web:index' %}" method="post" >{%  csrf_token %}
-                <div>{{ form.accounts }}</div>
-                <div>{{ form.search }}</div>
-                <input type="submit" value="Search">
-            </form>
-        {%  endif %}
-    </div>
-    {% endblock %}
-    <div>
-        {% block content %}{% endblock %}
-    </div>
-</div>
+    </body>
+</html>
