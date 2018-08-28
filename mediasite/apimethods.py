@@ -195,7 +195,8 @@ class MediasiteAPI:
         catalog_to_create = dict(
             FriendlyName=friendly_name,
             Name=catalog_name,
-            LinkedFolderId=course_folder_id
+            LinkedFolderId=course_folder_id,
+            LimitSearchToCatalog=True
         )
         json = MediasiteAPI.post_mediasite_request_json('Catalogs', catalog_to_create)
         serializer = CatalogSerializer(data=json)
