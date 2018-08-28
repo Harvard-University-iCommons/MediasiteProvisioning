@@ -17,6 +17,7 @@ class Catalog(BaseSerializedModel):
     Name = models.TextField()
     FriendlyName = models.TextField(null=True, blank=True)
     CatalogUrl = models.TextField()
+    LimitSearchToCatalog = models.BooleanField()
 
 class CatalogSetting(BaseSerializedModel):
     PresentationsPerPage = models.IntegerField()
